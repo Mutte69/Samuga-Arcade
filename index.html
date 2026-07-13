@@ -3,57 +3,99 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-  <meta name="theme-color" content="#061b2b" />
-  <meta name="description" content="Flappy Reef — a fast Telegram Mini App game." />
+  <meta name="theme-color" content="#031c31" />
+  <meta name="description" content="Flappy Reef — swim through a living coral reef in this Telegram Mini App game." />
   <title>Flappy Reef</title>
-  <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="preload" href="/static/assets/samuga-creative-logo.png" as="image" />
+  <link rel="stylesheet" href="/static/styles.css?v=2.0.0" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
   <main id="app" aria-label="Flappy Reef game">
     <canvas id="gameCanvas" aria-label="Flappy Reef game canvas"></canvas>
 
+    <section id="bootScreen" class="boot-screen" aria-label="Loading Flappy Reef">
+      <div class="boot-rings" aria-hidden="true">
+        <span></span><span></span><span></span>
+      </div>
+      <img class="boot-logo" src="/static/assets/samuga-creative-logo.png" alt="Samuga Creative" />
+      <p class="boot-powered">POWERED BY</p>
+      <p class="boot-name">SAMUGA CREATIVE</p>
+      <div class="loading-track"><span></span></div>
+    </section>
+
     <div id="hud" class="hud hidden" aria-live="polite">
       <div class="score-chip"><span id="score">0</span></div>
-      <button id="soundButton" class="icon-button" type="button" aria-label="Toggle sound">🔊</button>
+      <div class="hud-actions">
+        <button id="soundButton" class="icon-button" type="button" aria-label="Mute sound">🔊</button>
+      </div>
     </div>
 
-    <section id="startScreen" class="panel-screen">
-      <div class="brand-mark" aria-hidden="true">🐠</div>
-      <p class="eyebrow">SAMUGA MINI GAMES</p>
-      <h1>FLAPPY REEF</h1>
-      <p class="subtitle">Tap anywhere to swim through the reef.</p>
-      <div class="profile-strip" aria-label="Player progress">
-        <span>🪙 <strong id="homeCoins">0</strong></span>
-        <span>LV <strong id="homeLevel">1</strong></span>
-        <span>BEST <strong id="homeBest">0</strong></span>
+    <section id="startScreen" class="panel-screen hidden">
+      <div class="menu-card start-card">
+        <div class="hero-fish" aria-hidden="true">
+          <span class="hero-tail"></span>
+          <span class="hero-body"><i></i><b></b></span>
+          <span class="hero-bubbles"><i></i><i></i><i></i></span>
+        </div>
+
+        <p class="eyebrow">SAMUGA MINI GAMES</p>
+        <h1><span>FLAPPY</span><strong>REEF</strong></h1>
+        <p class="subtitle">Tap to swim. Dodge the reef columns. Chase a new best.</p>
+
+        <div class="profile-strip" aria-label="Player progress">
+          <span>🪙 <strong id="homeCoins">0</strong></span>
+          <span>LV <strong id="homeLevel">1</strong></span>
+          <span>BEST <strong id="homeBest">0</strong></span>
+        </div>
+
+        <button id="playButton" class="primary-button" type="button">
+          <span class="play-icon">▶</span> PLAY NOW
+        </button>
+        <p class="tiny-note">Tap • Click • Space</p>
+
+        <div class="powered-by">
+          <span>POWERED BY</span>
+          <div>
+            <img src="/static/assets/samuga-creative-logo.png" alt="" />
+            <strong>SAMUGA CREATIVE</strong>
+          </div>
+        </div>
       </div>
-      <button id="playButton" class="primary-button" type="button">PLAY NOW</button>
-      <p class="tiny-note">Tap • Click • Space</p>
     </section>
 
     <section id="gameOverScreen" class="panel-screen hidden" aria-live="assertive">
-      <p class="eyebrow">REEF RUN OVER</p>
-      <div id="newBestBadge" class="new-best-badge hidden">NEW BEST!</div>
-      <h2 id="resultTitle">Nice swim!</h2>
-      <div class="result-grid">
-        <div class="result-card">
-          <span>Score</span>
-          <strong id="finalScore">0</strong>
+      <div class="menu-card result-menu-card">
+        <p class="eyebrow">REEF RUN OVER</p>
+        <div id="newBestBadge" class="new-best-badge hidden">NEW BEST!</div>
+        <h2 id="resultTitle">Nice swim!</h2>
+
+        <div class="result-grid">
+          <div class="result-card">
+            <span>SCORE</span>
+            <strong id="finalScore">0</strong>
+          </div>
+          <div class="result-card">
+            <span>BEST</span>
+            <strong id="bestScore">0</strong>
+          </div>
         </div>
-        <div class="result-card">
-          <span>Best</span>
-          <strong id="bestScore">0</strong>
+
+        <div class="reward-row">
+          <span>🪙 +<strong id="coinsEarned">0</strong></span>
+          <span>XP +<strong id="xpEarned">0</strong></span>
+          <span>LV <strong id="resultLevel">1</strong></span>
+        </div>
+        <div class="xp-track" aria-label="Level progress"><div id="xpFill"></div></div>
+
+        <button id="restartButton" class="primary-button" type="button">↻ PLAY AGAIN</button>
+        <button id="shareButton" class="secondary-button" type="button">↗ SHARE SCORE</button>
+
+        <div class="result-powered">
+          <img src="/static/assets/samuga-creative-logo.png" alt="" />
+          <span>SAMUGA CREATIVE</span>
         </div>
       </div>
-      <div class="reward-row">
-        <span>🪙 +<strong id="coinsEarned">0</strong></span>
-        <span>XP +<strong id="xpEarned">0</strong></span>
-        <span>LV <strong id="resultLevel">1</strong></span>
-      </div>
-      <div class="xp-track" aria-label="Level progress"><div id="xpFill"></div></div>
-      <button id="restartButton" class="primary-button" type="button">PLAY AGAIN</button>
-      <button id="shareButton" class="secondary-button" type="button">SHARE SCORE</button>
     </section>
 
     <div id="rotateNotice" class="rotate-notice hidden">
@@ -62,6 +104,6 @@
     </div>
   </main>
 
-  <script src="/static/game.js" defer></script>
+  <script src="/static/game.js?v=2.0.0" defer></script>
 </body>
 </html>

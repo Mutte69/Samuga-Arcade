@@ -1,76 +1,45 @@
-# Flappy Reef — Telegram Mini App
+# Flappy Reef — Sprint 2
 
-A mobile-first Flappy Bird-style game made for Telegram Mini Apps.
+A polished underwater Telegram Mini App game by Samuga Creative.
 
-## Included in Sprint 1
+## Sprint 2 upgrades
 
-- Tap, click, Space, Arrow Up and W controls
-- Responsive HTML5 Canvas gameplay
-- Increasing obstacle speed
-- Score and device-local best score
-- Telegram haptic feedback
-- Telegram fullscreen/expanded mode where supported
-- Share-score button
-- Sound toggle
-- Railway-ready FastAPI server
-- Bot menu-button setup script
+- Animated clownfish replaces the bird
+- Living underwater background with light rays and bubbles
+- Distant schools of fish and animated jellyfish
+- Layered parallax reef, coral, seaweed, rocks and sand
+- Reef-covered stone obstacle columns with algae, starfish and coral
+- Animated Samuga Creative loading screen
+- Samuga Creative branding on start and result menus
+- Bubble trail, score particles, crash burst and screen shake
+- Coins, XP, levels and per-user local progress
+- Telegram fullscreen, haptics and score sharing
+- Responsive touch, click and keyboard controls
 
-## Run locally
+## Deploy the update
+
+1. Extract this ZIP.
+2. Open the `flappy-reef-miniapp` folder.
+3. Replace the files in your existing GitHub repository with these files.
+4. Commit and push. Railway will redeploy automatically.
+5. Wait for Railway to show `Success`.
+6. Fully close and reopen the Telegram Mini App to clear the old web view cache.
+
+Suggested commit message:
+
+```text
+Sprint 2: underwater reef redesign and Samuga Creative branding
+```
+
+## Local test
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\\Scripts\\activate
+source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn server:app --reload
 ```
 
 Open `http://127.0.0.1:8000`.
 
-## Deploy to Railway
-
-1. Create a new GitHub repository and upload this project.
-2. In Railway, choose **New Project → Deploy from GitHub Repo**.
-3. Select the repository and deploy.
-4. In Railway networking, generate a public domain.
-5. Confirm `https://YOUR-DOMAIN/health` returns `{"status":"ok"}`.
-
-## Connect it to Telegram
-
-### Easiest method: BotFather
-
-1. Open `@BotFather`.
-2. Use `/mybots` and select your bot.
-3. Choose **Bot Settings → Menu Button → Configure menu button**.
-4. Send the Railway HTTPS URL.
-5. Set the button text to `Play Flappy Reef`.
-
-### Script method
-
-After deploying, run:
-
-```bash
-export TELEGRAM_BOT_TOKEN="YOUR_BOT_TOKEN"
-export WEBAPP_URL="https://YOUR-DOMAIN.up.railway.app"
-python bot_setup.py
-```
-
-Never commit the bot token to GitHub.
-
-## Main game settings
-
-Edit `static/game.js`:
-
-- Gravity: search for `const gravity`
-- Jump strength: search for `bird.velocityY = -`
-- Starting speed: search for `worldSpeed`
-- Pipe gap: search for `const gap`
-- Difficulty increase: search for `score * 4.6`
-
-## Next sprint ideas
-
-- Secure online leaderboard
-- Telegram profile photos and names
-- Daily challenge seed
-- Revive once per game
-- Coins and unlockable fish skins
-- Friend challenges through bot deep links
+Health check: `http://127.0.0.1:8000/health`
