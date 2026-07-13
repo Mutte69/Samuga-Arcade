@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 
 BASE_DIR = Path(__file__).resolve().parent
 
-app = FastAPI(title="Flappy Reef Mini App", docs_url=None, redoc_url=None)
+app = FastAPI(title="Samuga Arcade Mini App", docs_url=None, redoc_url=None)
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 
 

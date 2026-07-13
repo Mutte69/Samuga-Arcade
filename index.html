@@ -4,106 +4,122 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#031c31" />
-  <meta name="description" content="Flappy Reef — swim through a living coral reef in this Telegram Mini App game." />
-  <title>Flappy Reef</title>
+  <meta name="description" content="Samuga Arcade — underwater Telegram Mini App games with shared coins, XP and levels." />
+  <title>Samuga Arcade</title>
   <link rel="preload" href="/static/assets/samuga-creative-logo.png" as="image" />
-  <link rel="stylesheet" href="/static/styles.css?v=2.0.0" />
+  <link rel="stylesheet" href="/static/styles.css?v=3.0.0" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-  <main id="app" aria-label="Flappy Reef game">
-    <canvas id="gameCanvas" aria-label="Flappy Reef game canvas"></canvas>
+  <main id="app" aria-label="Samuga Arcade">
+    <canvas id="gameCanvas" aria-label="Samuga Arcade game canvas"></canvas>
 
-    <section id="bootScreen" class="boot-screen" aria-label="Loading Flappy Reef">
-      <div class="boot-rings" aria-hidden="true">
-        <span></span><span></span><span></span>
-      </div>
+    <section id="bootScreen" class="boot-screen" aria-label="Loading Samuga Arcade">
+      <div class="boot-rings" aria-hidden="true"><span></span><span></span><span></span></div>
       <img class="boot-logo" src="/static/assets/samuga-creative-logo.png" alt="Samuga Creative" />
       <p class="boot-powered">POWERED BY</p>
       <p class="boot-name">SAMUGA CREATIVE</p>
       <div class="loading-track"><span></span></div>
     </section>
 
-    <div id="hud" class="hud hidden" aria-live="polite">
-      <div class="score-chip"><span id="score">0</span></div>
-      <div class="hud-actions">
+    <header id="topBar" class="top-bar hidden">
+      <button id="backButton" class="icon-button hidden" type="button" aria-label="Back to arcade">‹</button>
+      <div class="top-title">
+        <span id="topEyebrow">SAMUGA</span>
+        <strong id="topTitle">ARCADE</strong>
+      </div>
+      <div class="top-profile">
+        <span>🪙 <b id="topCoins">0</b></span>
+        <span>LV <b id="topLevel">1</b></span>
+      </div>
+    </header>
+
+    <section id="hubScreen" class="hub-screen hidden">
+      <div class="hub-scroll">
+        <section class="hub-hero">
+          <div class="hero-orbit" aria-hidden="true">
+            <span class="orbit-bubble b1"></span><span class="orbit-bubble b2"></span><span class="orbit-bubble b3"></span>
+            <div class="hero-fish"><i></i><b></b><em></em></div>
+          </div>
+          <p class="eyebrow">SAMUGA MINI GAMES</p>
+          <h1>SAMUGA <span>ARCADE</span></h1>
+          <p>Four quick games. One shared profile. Earn coins and level up everywhere.</p>
+          <div class="profile-card">
+            <div><span>LEVEL</span><strong id="homeLevel">1</strong></div>
+            <div class="xp-column"><span id="xpLabel">0 / 20 XP</span><div class="xp-track"><i id="homeXpFill"></i></div></div>
+            <div><span>COINS</span><strong id="homeCoins">0</strong></div>
+          </div>
+        </section>
+
+        <section class="game-grid" aria-label="Games">
+          <button class="game-card featured" data-game="flappy" type="button">
+            <span class="card-art flappy-art"><i class="mini-fish"></i><i class="reef-pillar p1"></i><i class="reef-pillar p2"></i></span>
+            <span class="card-copy"><small>ORIGINAL ARCADE RUN</small><strong>Flappy Reef</strong><em>Tap to swim through coral gates.</em></span>
+            <span class="card-best">BEST <b id="bestFlappy">0</b></span>
+          </button>
+
+          <button class="game-card" data-game="bubble" type="button">
+            <span class="card-art bubble-art"><i></i><i></i><i></i><i></i></span>
+            <span class="card-copy"><small>30 SECOND RUSH</small><strong>Bubble Burst</strong><em>Pop bubbles, build combos, avoid urchins.</em></span>
+            <span class="card-best">BEST <b id="bestBubble">0</b></span>
+          </button>
+
+          <button class="game-card" data-game="maze" type="button">
+            <span class="card-art maze-art" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+            <span class="card-copy"><small>PUZZLE ESCAPE</small><strong>Reef Maze</strong><em>Navigate the fish to the glowing pearl.</em></span>
+            <span class="card-best">BEST <b id="bestMaze">0</b></span>
+          </button>
+
+          <button class="game-card" data-game="memory" type="button">
+            <span class="card-art memory-art"><i>🐠</i><i>🐙</i><i>?</i><i>?</i></span>
+            <span class="card-copy"><small>MEMORY CHALLENGE</small><strong>Ocean Pairs</strong><em>Find every matching sea creature.</em></span>
+            <span class="card-best">BEST <b id="bestMemory">0</b></span>
+          </button>
+        </section>
+
+        <div class="powered-by hub-powered">
+          <span>POWERED BY</span>
+          <div><img src="/static/assets/samuga-creative-logo.png" alt="" /><strong>SAMUGA CREATIVE</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="gameScreen" class="game-screen hidden">
+      <div id="gameHud" class="game-hud">
+        <div class="hud-chip"><span id="hudLabel">SCORE</span><strong id="hudScore">0</strong></div>
+        <div id="hudTimerChip" class="hud-chip hidden"><span>TIME</span><strong id="hudTimer">30</strong></div>
         <button id="soundButton" class="icon-button" type="button" aria-label="Mute sound">🔊</button>
       </div>
-    </div>
-
-    <section id="startScreen" class="panel-screen hidden">
-      <div class="menu-card start-card">
-        <div class="hero-fish" aria-hidden="true">
-          <span class="hero-tail"></span>
-          <span class="hero-body"><i></i><b></b></span>
-          <span class="hero-bubbles"><i></i><i></i><i></i></span>
-        </div>
-
-        <p class="eyebrow">SAMUGA MINI GAMES</p>
-        <h1><span>FLAPPY</span><strong>REEF</strong></h1>
-        <p class="subtitle">Tap to swim. Dodge the reef columns. Chase a new best.</p>
-
-        <div class="profile-strip" aria-label="Player progress">
-          <span>🪙 <strong id="homeCoins">0</strong></span>
-          <span>LV <strong id="homeLevel">1</strong></span>
-          <span>BEST <strong id="homeBest">0</strong></span>
-        </div>
-
-        <button id="playButton" class="primary-button" type="button">
-          <span class="play-icon">▶</span> PLAY NOW
-        </button>
-        <p class="tiny-note">Tap • Click • Space</p>
-
-        <div class="powered-by">
-          <span>POWERED BY</span>
-          <div>
-            <img src="/static/assets/samuga-creative-logo.png" alt="" />
-            <strong>SAMUGA CREATIVE</strong>
-          </div>
-        </div>
+      <div id="instructionPill" class="instruction-pill">Tap to start</div>
+      <div id="mazeControls" class="maze-controls hidden" aria-label="Maze controls">
+        <button data-dir="up" type="button">▲</button>
+        <button data-dir="left" type="button">◀</button>
+        <button data-dir="down" type="button">▼</button>
+        <button data-dir="right" type="button">▶</button>
       </div>
     </section>
 
-    <section id="gameOverScreen" class="panel-screen hidden" aria-live="assertive">
-      <div class="menu-card result-menu-card">
-        <p class="eyebrow">REEF RUN OVER</p>
+    <section id="resultScreen" class="panel-screen hidden" aria-live="assertive">
+      <div class="result-card-panel">
+        <p id="resultEyebrow" class="eyebrow">GAME COMPLETE</p>
         <div id="newBestBadge" class="new-best-badge hidden">NEW BEST!</div>
-        <h2 id="resultTitle">Nice swim!</h2>
-
+        <h2 id="resultTitle">Great run!</h2>
+        <p id="resultMessage">You earned rewards for your arcade profile.</p>
         <div class="result-grid">
-          <div class="result-card">
-            <span>SCORE</span>
-            <strong id="finalScore">0</strong>
-          </div>
-          <div class="result-card">
-            <span>BEST</span>
-            <strong id="bestScore">0</strong>
-          </div>
+          <div><span id="resultScoreLabel">SCORE</span><strong id="resultScore">0</strong></div>
+          <div><span>BEST</span><strong id="resultBest">0</strong></div>
         </div>
-
-        <div class="reward-row">
-          <span>🪙 +<strong id="coinsEarned">0</strong></span>
-          <span>XP +<strong id="xpEarned">0</strong></span>
-          <span>LV <strong id="resultLevel">1</strong></span>
-        </div>
-        <div class="xp-track" aria-label="Level progress"><div id="xpFill"></div></div>
-
-        <button id="restartButton" class="primary-button" type="button">↻ PLAY AGAIN</button>
-        <button id="shareButton" class="secondary-button" type="button">↗ SHARE SCORE</button>
-
-        <div class="result-powered">
-          <img src="/static/assets/samuga-creative-logo.png" alt="" />
-          <span>SAMUGA CREATIVE</span>
-        </div>
+        <div class="reward-row"><span>🪙 +<b id="coinsEarned">0</b></span><span>XP +<b id="xpEarned">0</b></span><span>LV <b id="resultLevel">1</b></span></div>
+        <div class="xp-track result-xp"><i id="resultXpFill"></i></div>
+        <button id="playAgainButton" class="primary-button" type="button">↻ PLAY AGAIN</button>
+        <button id="arcadeButton" class="secondary-button" type="button">⌂ BACK TO ARCADE</button>
+        <button id="shareButton" class="text-button" type="button">↗ Share score</button>
+        <div class="result-powered"><img src="/static/assets/samuga-creative-logo.png" alt="" /><span>SAMUGA CREATIVE</span></div>
       </div>
     </section>
 
-    <div id="rotateNotice" class="rotate-notice hidden">
-      <strong>Turn your phone upright</strong>
-      <span>Flappy Reef plays best in portrait mode.</span>
-    </div>
+    <div id="rotateNotice" class="rotate-notice hidden"><strong>Turn your phone upright</strong><span>Samuga Arcade plays best in portrait mode.</span></div>
   </main>
-
-  <script src="/static/game.js?v=2.0.0" defer></script>
+  <script src="/static/app.js?v=3.0.0" defer></script>
 </body>
 </html>

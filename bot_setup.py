@@ -1,4 +1,4 @@
-"""Configure your Telegram bot's permanent menu button for the Mini App.
+"""Configure a Telegram bot menu button to open Samuga Arcade.
 
 Usage:
     TELEGRAM_BOT_TOKEN=123:ABC WEBAPP_URL=https://your-app.up.railway.app python bot_setup.py
@@ -6,7 +6,6 @@ Usage:
 
 import json
 import os
-import sys
 import urllib.error
 import urllib.request
 
@@ -22,7 +21,7 @@ endpoint = f"https://api.telegram.org/bot{TOKEN}/setChatMenuButton"
 payload = {
     "menu_button": {
         "type": "web_app",
-        "text": "Play Flappy Reef",
+        "text": "Play Samuga Arcade",
         "web_app": {"url": WEBAPP_URL},
     }
 }
@@ -45,4 +44,4 @@ except urllib.error.URLError as exc:
 if not result.get("ok"):
     raise SystemExit(f"Telegram setup failed: {result}")
 
-print("Success: the bot menu button now opens Flappy Reef.")
+print("Success: the bot menu button now opens Samuga Arcade.")
