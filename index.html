@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#061b2b" />
+  <meta name="description" content="Flappy Reef — a fast Telegram Mini App game." />
+  <title>Flappy Reef</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <main id="app" aria-label="Flappy Reef game">
+    <canvas id="gameCanvas" aria-label="Flappy Reef game canvas"></canvas>
+
+    <div id="hud" class="hud hidden" aria-live="polite">
+      <div class="score-chip"><span id="score">0</span></div>
+      <button id="soundButton" class="icon-button" type="button" aria-label="Toggle sound">🔊</button>
+    </div>
+
+    <section id="startScreen" class="panel-screen">
+      <div class="brand-mark" aria-hidden="true">🐠</div>
+      <p class="eyebrow">SAMUGA MINI GAMES</p>
+      <h1>FLAPPY REEF</h1>
+      <p class="subtitle">Tap anywhere to swim through the reef.</p>
+      <button id="playButton" class="primary-button" type="button">PLAY NOW</button>
+      <p class="tiny-note">Tap • Click • Space</p>
+    </section>
+
+    <section id="gameOverScreen" class="panel-screen hidden" aria-live="assertive">
+      <p class="eyebrow">REEF RUN OVER</p>
+      <h2>Nice swim!</h2>
+      <div class="result-grid">
+        <div class="result-card">
+          <span>Score</span>
+          <strong id="finalScore">0</strong>
+        </div>
+        <div class="result-card">
+          <span>Best</span>
+          <strong id="bestScore">0</strong>
+        </div>
+      </div>
+      <button id="restartButton" class="primary-button" type="button">PLAY AGAIN</button>
+      <button id="shareButton" class="secondary-button" type="button">SHARE SCORE</button>
+    </section>
+
+    <div id="rotateNotice" class="rotate-notice hidden">
+      <strong>Turn your phone upright</strong>
+      <span>Flappy Reef plays best in portrait mode.</span>
+    </div>
+  </main>
+
+  <script src="/static/game.js" defer></script>
+</body>
+</html>
