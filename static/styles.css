@@ -271,3 +271,80 @@ h2 {
     display: flex;
   }
 }
+
+.profile-strip,
+.reward-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: min(296px, 82vw);
+}
+
+.profile-strip {
+  margin: -10px 0 22px;
+}
+
+.profile-strip span,
+.reward-row span {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.075);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.045em;
+}
+
+.profile-strip span {
+  padding: 8px 11px;
+}
+
+.profile-strip strong,
+.reward-row strong {
+  color: white;
+}
+
+.reward-row {
+  margin: -6px 0 12px;
+}
+
+.reward-row span {
+  flex: 1;
+  padding: 10px 6px;
+}
+
+.xp-track {
+  width: min(296px, 82vw);
+  height: 8px;
+  margin: 0 0 18px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.xp-track > div {
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #25d3ff, #83f5ff);
+  transition: width 500ms cubic-bezier(.2,.8,.2,1);
+}
+
+.new-best-badge {
+  margin-bottom: 12px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fff67a, #ffc63b);
+  color: #4c3100;
+  box-shadow: 0 8px 24px rgba(255, 199, 57, 0.3);
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  animation: badge-pop 440ms cubic-bezier(.2,1.4,.4,1);
+}
+
+@keyframes badge-pop {
+  from { opacity: 0; transform: scale(.6) rotate(-6deg); }
+  to { opacity: 1; transform: scale(1) rotate(0); }
+}

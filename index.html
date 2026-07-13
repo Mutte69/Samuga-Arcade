@@ -23,13 +23,19 @@
       <p class="eyebrow">SAMUGA MINI GAMES</p>
       <h1>FLAPPY REEF</h1>
       <p class="subtitle">Tap anywhere to swim through the reef.</p>
+      <div class="profile-strip" aria-label="Player progress">
+        <span>🪙 <strong id="homeCoins">0</strong></span>
+        <span>LV <strong id="homeLevel">1</strong></span>
+        <span>BEST <strong id="homeBest">0</strong></span>
+      </div>
       <button id="playButton" class="primary-button" type="button">PLAY NOW</button>
       <p class="tiny-note">Tap • Click • Space</p>
     </section>
 
     <section id="gameOverScreen" class="panel-screen hidden" aria-live="assertive">
       <p class="eyebrow">REEF RUN OVER</p>
-      <h2>Nice swim!</h2>
+      <div id="newBestBadge" class="new-best-badge hidden">NEW BEST!</div>
+      <h2 id="resultTitle">Nice swim!</h2>
       <div class="result-grid">
         <div class="result-card">
           <span>Score</span>
@@ -40,6 +46,12 @@
           <strong id="bestScore">0</strong>
         </div>
       </div>
+      <div class="reward-row">
+        <span>🪙 +<strong id="coinsEarned">0</strong></span>
+        <span>XP +<strong id="xpEarned">0</strong></span>
+        <span>LV <strong id="resultLevel">1</strong></span>
+      </div>
+      <div class="xp-track" aria-label="Level progress"><div id="xpFill"></div></div>
       <button id="restartButton" class="primary-button" type="button">PLAY AGAIN</button>
       <button id="shareButton" class="secondary-button" type="button">SHARE SCORE</button>
     </section>

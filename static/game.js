@@ -14,10 +14,22 @@
   const shareButton = document.getElementById("shareButton");
   const soundButton = document.getElementById("soundButton");
   const rotateNotice = document.getElementById("rotateNotice");
+  const homeCoinsEl = document.getElementById("homeCoins");
+  const homeLevelEl = document.getElementById("homeLevel");
+  const homeBestEl = document.getElementById("homeBest");
+  const coinsEarnedEl = document.getElementById("coinsEarned");
+  const xpEarnedEl = document.getElementById("xpEarned");
+  const resultLevelEl = document.getElementById("resultLevel");
+  const xpFillEl = document.getElementById("xpFill");
+  const newBestBadge = document.getElementById("newBestBadge");
+  const resultTitle = document.getElementById("resultTitle");
 
   const tg = window.Telegram?.WebApp ?? null;
   const telegramUser = tg?.initDataUnsafe?.user ?? null;
-  const playerKey = telegramUser?.id ? `flappy-reef-best-${telegramUser.id}` : "flappy-reef-best-guest";
+  const playerId = telegramUser?.id ?? "guest";
+  const playerKey = `flappy-reef-best-${playerId}`;
+  const coinsKey = `flappy-reef-coins-${playerId}`;
+  const xpKey = `flappy-reef-xp-${playerId}`;
 
   if (tg) {
     tg.ready();
@@ -46,6 +58,10 @@
   let elapsed = 0;
   let score = 0;
   let bestScore = Number.parseInt(localStorage.getItem(playerKey) || "0", 10);
+  let totalCoins = Number.parseInt(localStorage.getItem(coinsKey) || "0", 10);
+  let totalXp = Number.parseInt(localStorage.getItem(xpKey) || "0", 10);
+  let particles = [];
+  let runWasBest = false;
   let worldSpeed = 188;
   let spawnTimer = 0;
   let nextSpawnIn = 1.55;
@@ -151,6 +167,42 @@
     tone(120, 0.24, 0.065, "sawtooth");
   }
 
+  function levelFromXp(xp) {
+    return Math.floor(Math.sqrt(xp / 20)) + 1;
+  }
+
+  function xpForLevel(level) {
+    return Math.max(0, (level - 1) * (level - 1) * 20);
+  }
+
+  function updateProfileUi() {
+    const level = levelFromXp(totalXp);
+    const startXp = xpForLevel(level);
+    const endXp = xpForLevel(level + 1);
+    const progress = endXp > startXp ? ((totalXp - startXp) / (endXp - startXp)) * 100 : 0;
+    homeCoinsEl.textContent = String(totalCoins);
+    homeLevelEl.textContent = String(level);
+    homeBestEl.textContent = String(bestScore);
+    resultLevelEl.textContent = String(level);
+    xpFillEl.style.width = `${Math.max(0, Math.min(100, progress))}%`;
+  }
+
+  function burst(x, y, amount = 14, kind = "bubble") {
+    for (let i = 0; i < amount; i += 1) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 45 + Math.random() * 150;
+      particles.push({
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 0.45 + Math.random() * 0.45,
+        maxLife: 0.9,
+        size: 2 + Math.random() * 5,
+        kind,
+      });
+    }
+  }
+
   function resetGame() {
     score = 0;
     elapsed = 0;
@@ -159,6 +211,8 @@
     nextSpawnIn = 1.22;
     floorOffset = 0;
     pipes = [];
+    particles = [];
+    runWasBest = false;
     bird.x = width * 0.28;
     bird.y = height * 0.45;
     bird.velocityY = 0;
@@ -183,6 +237,7 @@
     bird.rotation = -0.48;
     haptic("flap");
     flapSound();
+    burst(bird.x - bird.radius, bird.y + 4, 4, "bubble");
   }
 
   function endGame() {
@@ -193,13 +248,28 @@
     haptic("dead");
     crashSound();
 
-    if (score > bestScore) {
+    runWasBest = score > bestScore;
+    if (runWasBest) {
       bestScore = score;
       localStorage.setItem(playerKey, String(bestScore));
     }
 
+    const coinsEarned = Math.max(1, Math.floor(score / 2) + (runWasBest ? 3 : 0));
+    const xpEarned = Math.max(2, score * 3 + (runWasBest ? 10 : 0));
+    totalCoins += coinsEarned;
+    totalXp += xpEarned;
+    localStorage.setItem(coinsKey, String(totalCoins));
+    localStorage.setItem(xpKey, String(totalXp));
+    coinsEarnedEl.textContent = String(coinsEarned);
+    xpEarnedEl.textContent = String(xpEarned);
+    newBestBadge.classList.toggle("hidden", !runWasBest);
+    resultTitle.textContent = score >= 20 ? "Reef legend!" : score >= 10 ? "Great swim!" : "Nice swim!";
+    updateProfileUi();
+    burst(bird.x, bird.y, 24, "spark");
+
     finalScoreEl.textContent = String(score);
     bestScoreEl.textContent = String(bestScore);
+  updateProfileUi();
 
     window.setTimeout(() => {
       hud.classList.add("hidden");
@@ -253,6 +323,15 @@
       return;
     }
 
+    for (const particle of particles) {
+      particle.life -= dt;
+      particle.x += particle.vx * dt;
+      particle.y += particle.vy * dt;
+      particle.vy += (particle.kind === "bubble" ? -30 : 280) * dt;
+      particle.vx *= 0.985;
+    }
+    particles = particles.filter((particle) => particle.life > 0);
+
     if (state !== State.PLAYING) return;
 
     const s = scaleFactor();
@@ -288,6 +367,7 @@
         scoreEl.textContent = String(score);
         haptic("score");
         scoreSound();
+        burst(pipe.x + pipe.width / 2, (pipe.gapTop + pipe.gapBottom) / 2, 10, "spark");
       }
 
       const px1 = pipe.x;
@@ -514,6 +594,27 @@
     ctx.restore();
   }
 
+  function drawParticles() {
+    ctx.save();
+    for (const particle of particles) {
+      const alpha = Math.max(0, particle.life / particle.maxLife);
+      ctx.globalAlpha = alpha;
+      if (particle.kind === "bubble") {
+        ctx.strokeStyle = "#eaffff";
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = "#fff07a";
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+
   function drawFloor() {
     const floorHeight = Math.max(72, height * 0.095);
     const y = height - floorHeight;
@@ -552,6 +653,7 @@
     drawBackground();
     for (const pipe of pipes) drawPipe(pipe);
     drawBird();
+    drawParticles();
     drawFloor();
     ctx.restore();
 
@@ -636,6 +738,7 @@
   window.addEventListener("orientationchange", () => window.setTimeout(resize, 120));
 
   bestScoreEl.textContent = String(bestScore);
+  updateProfileUi();
   resize();
   resetGame();
   state = State.READY;
