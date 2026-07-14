@@ -32,3 +32,9 @@ Bluetooth phone-to-phone multiplayer is not included because browser Bluetooth s
 5. Fully close and reopen the Telegram Mini App to bypass old cached assets.
 
 The existing bot and Railway URL stay the same. No new bot is required.
+
+
+## Sprint 4 additions
+- Treasure Catch: drag-to-catch arcade challenge
+- Shark Escape: three-lane survival game
+- Sea Snake: tap-to-turn classic snake game

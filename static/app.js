@@ -58,7 +58,7 @@
     }
   }
 
-  const defaultProfile = () => ({ coins: 0, xp: 0, bests: { flappy: 0, bubble: 0, maze: 0, memory: 0, hockey: 0, clash: 0 } });
+  const defaultProfile = () => ({ coins: 0, xp: 0, bests: { flappy: 0, bubble: 0, maze: 0, memory: 0, treasure: 0, shark: 0, snake: 0, hockey: 0, clash: 0 } });
   let profile = loadProfile();
 
   function loadProfile() {
@@ -115,6 +115,9 @@
     $("bestBubble").textContent = String(profile.bests.bubble || 0);
     $("bestMaze").textContent = String(profile.bests.maze || 0);
     $("bestMemory").textContent = String(profile.bests.memory || 0);
+    $("bestTreasure").textContent = String(profile.bests.treasure || 0);
+    $("bestShark").textContent = String(profile.bests.shark || 0);
+    $("bestSnake").textContent = String(profile.bests.snake || 0);
     $("bestHockey").textContent = String(profile.bests.hockey || 0);
     $("bestClash").textContent = String(profile.bests.clash || 0);
   }

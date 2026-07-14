@@ -7,7 +7,7 @@
   <meta name="description" content="Samuga Arcade — underwater Telegram Mini App games with shared coins, XP and levels." />
   <title>Samuga Arcade</title>
   <link rel="preload" href="/static/assets/samuga-creative-logo.png" as="image" />
-  <link rel="stylesheet" href="/static/styles.css?v=4.0.0" />
+  <link rel="stylesheet" href="/static/styles.css?v=5.0.0" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
@@ -43,7 +43,7 @@
           </div>
           <p class="eyebrow">SAMUGA MINI GAMES</p>
           <h1>SAMUGA <span>ARCADE</span></h1>
-          <p>Six quick games. One shared profile. Play solo or battle a friend on the same phone.</p>
+          <p>Nine quick games. One shared profile. Play solo or battle a friend on the same phone.</p>
           <div class="profile-card">
             <div><span>LEVEL</span><strong id="homeLevel">1</strong></div>
             <div class="xp-column"><span id="xpLabel">0 / 20 XP</span><div class="xp-track"><i id="homeXpFill"></i></div></div>
@@ -74,6 +74,25 @@
             <span class="card-art memory-art"><i>🐠</i><i>🐙</i><i>?</i><i>?</i></span>
             <span class="card-copy"><small>MEMORY CHALLENGE</small><strong>Ocean Pairs</strong><em>Find every matching sea creature.</em></span>
             <span class="card-best">BEST <b id="bestMemory">0</b></span>
+          </button>
+
+
+          <button class="game-card" data-game="treasure" type="button">
+            <span class="card-art treasure-art" aria-hidden="true"><i class="treasure-chest">✦</i><i class="fall-coin c1">●</i><i class="fall-coin c2">●</i><i class="fall-bomb">✹</i></span>
+            <span class="card-copy"><small>FAST CATCH CHALLENGE</small><strong>Treasure Catch</strong><em>Drag the boat, catch pearls and dodge sea mines.</em></span>
+            <span class="card-best">BEST <b id="bestTreasure">0</b></span>
+          </button>
+
+          <button class="game-card" data-game="shark" type="button">
+            <span class="card-art shark-art" aria-hidden="true"><i class="lane l1"></i><i class="lane l2"></i><i class="runner-fish">➤</i><i class="chaser-shark">◆</i></span>
+            <span class="card-copy"><small>THREE-LANE SURVIVAL</small><strong>Shark Escape</strong><em>Switch lanes, collect stars and escape the hunters.</em></span>
+            <span class="card-best">BEST <b id="bestShark">0</b></span>
+          </button>
+
+          <button class="game-card" data-game="snake" type="button">
+            <span class="card-art snake-art" aria-hidden="true"><i></i><i></i><i></i><i></i><b>●</b></span>
+            <span class="card-copy"><small>CLASSIC ARCADE TWIST</small><strong>Sea Snake</strong><em>Tap left or right to turn and collect glowing pearls.</em></span>
+            <span class="card-best">BEST <b id="bestSnake">0</b></span>
           </button>
 
           <button class="game-card multiplayer-card" data-game="hockey" type="button">
@@ -138,6 +157,6 @@
 
     <div id="rotateNotice" class="rotate-notice hidden"><strong>Turn your phone upright</strong><span>Samuga Arcade plays best in portrait mode.</span></div>
   </main>
-  <script src="/static/app.js?v=4.0.0" defer></script>
+  <script src="/static/app.js?v=5.0.0" defer></script>
 </body>
 </html>
