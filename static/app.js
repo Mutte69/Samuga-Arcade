@@ -17,6 +17,7 @@
   const soundButton = $("soundButton");
   const instructionPill = $("instructionPill");
   const mazeControls = $("mazeControls");
+  const duelControls = $("duelControls");
   const hudLabel = $("hudLabel");
   const hudScore = $("hudScore");
   const hudTimerChip = $("hudTimerChip");
@@ -36,7 +37,7 @@
     };
     try {
       const testKey = "__samuga_storage_test__";
-      window.storage.setItem(testKey, "1");
+      window.localStorage.setItem(testKey, "1");
       window.localStorage.removeItem(testKey);
       return window.localStorage;
     } catch (_) {
@@ -57,7 +58,7 @@
     }
   }
 
-  const defaultProfile = () => ({ coins: 0, xp: 0, bests: { flappy: 0, bubble: 0, maze: 0, memory: 0 } });
+  const defaultProfile = () => ({ coins: 0, xp: 0, bests: { flappy: 0, bubble: 0, maze: 0, memory: 0, hockey: 0, clash: 0 } });
   let profile = loadProfile();
 
   function loadProfile() {
@@ -114,6 +115,8 @@
     $("bestBubble").textContent = String(profile.bests.bubble || 0);
     $("bestMaze").textContent = String(profile.bests.maze || 0);
     $("bestMemory").textContent = String(profile.bests.memory || 0);
+    $("bestHockey").textContent = String(profile.bests.hockey || 0);
+    $("bestClash").textContent = String(profile.bests.clash || 0);
   }
 
   let width = 0;
@@ -440,6 +443,7 @@
     resultScreen.classList.add("hidden");
     gameScreen.classList.add("hidden");
     mazeControls.classList.add("hidden");
+    duelControls.classList.add("hidden");
     hubScreen.classList.remove("hidden");
     topBar.classList.remove("hidden");
     backButton.classList.add("hidden");
@@ -462,6 +466,7 @@
     topBar.classList.remove("hidden");
     backButton.classList.remove("hidden");
     mazeControls.classList.toggle("hidden", gameId !== "maze");
+    duelControls.classList.toggle("hidden", gameId !== "clash");
     currentGame = factory();
     topEyebrow.textContent = "NOW PLAYING";
     topTitle.textContent = currentGame.title;
@@ -486,6 +491,7 @@
     screenMode = "result";
     gameScreen.classList.add("hidden");
     mazeControls.classList.add("hidden");
+    duelControls.classList.add("hidden");
     resultScreen.classList.remove("hidden");
     $("resultEyebrow").textContent = result.eyebrow || "GAME COMPLETE";
     $("newBestBadge").classList.toggle("hidden", !isBest);
@@ -906,27 +912,43 @@
   // ---------- OCEAN PAIRS ----------
   gameFactories.memory = () => ({
     title: "OCEAN PAIRS",
-    cards: [], first: null, second: null, lockUntil: 0, timeLeft: 60, moves: 0, pairs: 0, rect: null, ended: false,
+    cards: [], first: null, second: null, lockUntil: 0, previewUntil: 0, timeLeft: 60, moves: 0, pairs: 0, rect: null, ended: false,
     start() {
-      const icons = ["🐠", "🐙", "🐢", "🪼", "🦀", "🐬", "🐚", "⭐"];
-      this.cards = shuffle([...icons, ...icons]).map((icon) => ({ icon, matched: false, flipped: false }));
-      this.first = null; this.second = null; this.lockUntil = 0; this.timeLeft = 60; this.moves = 0; this.pairs = 0; this.ended = false;
+      const icons = ["fish", "octopus", "turtle", "jelly", "crab", "dolphin", "shell", "star"];
+      this.cards = shuffle([...icons, ...icons]).map((icon, index) => ({ icon, matched: false, flipped: false, index }));
+      this.first = null;
+      this.second = null;
+      this.lockUntil = 0;
+      this.previewUntil = performance.now() + 1250;
+      this.timeLeft = 60;
+      this.moves = 0;
+      this.pairs = 0;
+      this.ended = false;
       this.resize();
       setHud("PAIRS", "0/8", this.timeLeft);
-      setInstruction("Match all eight ocean pairs", true);
+      setInstruction("Memorize the reef cards…", false);
+      window.setTimeout(() => {
+        if (currentGame === this && !this.ended) setInstruction("Tap two cards to find a pair", true);
+      }, 1300);
     },
     resize() {
-      const maxW = Math.min(width - 30, 500);
-      const top = Math.max(165, height * .2);
-      const availableH = Math.max(300, height - top - 42);
-      const gap = Math.max(7, Math.min(11, width * .022));
-      const cell = Math.min((maxW - gap * 3) / 4, (availableH - gap * 3) / 4);
+      const sidePadding = Math.max(14, width * .035);
+      const maxW = Math.min(width - sidePadding * 2, 520);
+      const top = Math.max(148, Math.min(205, height * .205));
+      const bottomPadding = Math.max(18, height * .025);
+      const availableH = Math.max(250, height - top - bottomPadding);
+      const gap = Math.max(6, Math.min(11, width * .02));
+      const cellByWidth = (maxW - gap * 3) / 4;
+      const cellByHeight = (availableH - gap * 3) / 4;
+      const cell = Math.max(48, Math.min(cellByWidth, cellByHeight, 122));
       const boardW = cell * 4 + gap * 3;
-      const boardH = boardW;
-      this.rect = { x: (width - boardW) / 2, y: top + Math.max(0, (availableH - boardH) / 2), cell, gap, w: boardW, h: boardH };
+      const boardH = cell * 4 + gap * 3;
+      const centeredY = top + Math.max(0, (availableH - boardH) / 2);
+      this.rect = { x: (width - boardW) / 2, y: centeredY, cell, gap, w: boardW, h: boardH };
     },
     tap(x, y) {
-      if (this.ended || performance.now() < this.lockUntil || !this.rect) return;
+      const now = performance.now();
+      if (this.ended || now < this.previewUntil || now < this.lockUntil || !this.rect) return;
       const { x: bx, y: by, cell, gap } = this.rect;
       if (x < bx || y < by || x > bx + this.rect.w || y > by + this.rect.h) return;
       const c = Math.floor((x - bx) / (cell + gap));
@@ -949,22 +971,28 @@
       this.moves += 1;
       const firstCard = this.cards[this.first];
       if (firstCard.icon === card.icon) {
-        firstCard.matched = true; card.matched = true;
+        firstCard.matched = true;
+        card.matched = true;
         this.pairs += 1;
         const center = this.cardCenter(index);
         burst(center.x, center.y, 18, "spark");
         tone(820, .08, .03, "triangle", 150);
         haptic("good");
-        this.first = null; this.second = null;
+        this.first = null;
+        this.second = null;
         setHud("PAIRS", `${this.pairs}/8`, this.timeLeft);
         if (this.pairs === 8) this.complete();
       } else {
-        this.lockUntil = performance.now() + 720;
+        this.lockUntil = now + 720;
       }
     },
     cardCenter(index) {
-      const c = index % 4, r = Math.floor(index / 4);
-      return { x: this.rect.x + c * (this.rect.cell + this.rect.gap) + this.rect.cell / 2, y: this.rect.y + r * (this.rect.cell + this.rect.gap) + this.rect.cell / 2 };
+      const c = index % 4;
+      const r = Math.floor(index / 4);
+      return {
+        x: this.rect.x + c * (this.rect.cell + this.rect.gap) + this.rect.cell / 2,
+        y: this.rect.y + r * (this.rect.cell + this.rect.gap) + this.rect.cell / 2,
+      };
     },
     complete() {
       if (this.ended) return;
@@ -981,11 +1009,16 @@
     },
     update(dt) {
       if (this.ended) return;
-      this.timeLeft -= dt;
-      if (this.second !== null && performance.now() >= this.lockUntil) {
-        this.cards[this.first].flipped = false;
-        this.cards[this.second].flipped = false;
-        this.first = null; this.second = null; this.lockUntil = 0;
+      const now = performance.now();
+      if (now >= this.previewUntil) this.timeLeft -= dt;
+      if (this.second !== null && now >= this.lockUntil) {
+        const first = this.cards[this.first];
+        const second = this.cards[this.second];
+        if (first) first.flipped = false;
+        if (second) second.flipped = false;
+        this.first = null;
+        this.second = null;
+        this.lockUntil = 0;
       }
       setHud("PAIRS", `${this.pairs}/8`, this.timeLeft);
       if (this.timeLeft <= 0) {
@@ -996,31 +1029,437 @@
     },
     render(dt) {
       drawOceanBackground(dt);
-      if (!this.rect) return;
+      if (!this.rect || this.cards.length !== 16) return;
       const { x, y, cell, gap } = this.rect;
+      const preview = performance.now() < this.previewUntil;
       ctx.save();
+      ctx.fillStyle = "rgba(0,18,34,.32)";
+      roundRect(ctx, x - 9, y - 9, this.rect.w + 18, this.rect.h + 18, 20);
+      ctx.fill();
       for (let i = 0; i < this.cards.length; i += 1) {
-        const c = i % 4, r = Math.floor(i / 4);
-        const cx = x + c * (cell + gap), cy = y + r * (cell + gap);
+        const c = i % 4;
+        const r = Math.floor(i / 4);
+        const cx = x + c * (cell + gap);
+        const cy = y + r * (cell + gap);
         const card = this.cards[i];
-        const revealed = card.flipped || card.matched;
-        ctx.shadowColor = "rgba(0,0,0,.22)"; ctx.shadowBlur = 10; ctx.shadowOffsetY = 5;
+        const revealed = preview || card.flipped || card.matched;
+        ctx.shadowColor = "rgba(0,0,0,.26)";
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetY = 5;
         const g = ctx.createLinearGradient(cx, cy, cx + cell, cy + cell);
-        if (revealed) { g.addColorStop(0, card.matched ? "#27b7a5" : "#20a8c9"); g.addColorStop(1, card.matched ? "#0c6d77" : "#07567e"); }
-        else { g.addColorStop(0, "#0a4667"); g.addColorStop(1, "#031f3d"); }
-        ctx.fillStyle = g; ctx.strokeStyle = revealed ? "rgba(148,247,255,.55)" : "rgba(101,214,236,.22)"; ctx.lineWidth = 2;
-        roundRect(ctx, cx, cy, cell, cell, Math.max(11, cell * .16)); ctx.fill(); ctx.stroke();
-        ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
-        ctx.textAlign = "center"; ctx.textBaseline = "middle";
         if (revealed) {
-          ctx.font = `${Math.max(25, cell * .48)}px system-ui`;
-          ctx.fillText(card.icon, cx + cell / 2, cy + cell / 2 + 2);
+          g.addColorStop(0, card.matched ? "#34cdb2" : "#24b8d7");
+          g.addColorStop(1, card.matched ? "#08717b" : "#07527e");
         } else {
-          ctx.fillStyle = "rgba(101,227,247,.55)";
-          ctx.font = `900 ${Math.max(20, cell * .35)}px system-ui`;
-          ctx.fillText("?", cx + cell / 2, cy + cell / 2 + 2);
+          g.addColorStop(0, "#0d5d7a");
+          g.addColorStop(1, "#031f3d");
+        }
+        ctx.fillStyle = g;
+        ctx.strokeStyle = revealed ? "rgba(177,250,255,.78)" : "rgba(101,214,236,.36)";
+        ctx.lineWidth = Math.max(2, cell * .025);
+        roundRect(ctx, cx, cy, cell, cell, Math.max(10, cell * .16));
+        ctx.fill();
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetY = 0;
+        if (revealed) {
+          drawPairIcon(card.icon, cx + cell / 2, cy + cell / 2, cell * .31, card.matched ? 1 : .92);
+        } else {
+          ctx.save();
+          ctx.translate(cx + cell / 2, cy + cell / 2);
+          ctx.strokeStyle = "rgba(113,236,255,.72)";
+          ctx.lineWidth = Math.max(2, cell * .035);
+          ctx.beginPath();
+          ctx.arc(0, 0, cell * .18, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(-cell * .13, 0);
+          ctx.quadraticCurveTo(0, -cell * .18, cell * .13, 0);
+          ctx.quadraticCurveTo(0, cell * .18, -cell * .13, 0);
+          ctx.stroke();
+          ctx.restore();
         }
       }
+      ctx.restore();
+    },
+  });
+
+  function drawPairIcon(kind, x, y, size, alpha = 1) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(x, y);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    const s = size;
+    if (kind === "fish") {
+      ctx.fillStyle = "#ffd04a";
+      ctx.beginPath(); ctx.ellipse(0, 0, s * .72, s * .45, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#ff7932";
+      ctx.beginPath(); ctx.moveTo(-s * .58, 0); ctx.lineTo(-s * 1.05, -s * .5); ctx.lineTo(-s * .92, 0); ctx.lineTo(-s * 1.05, s * .5); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(s * .36, -s * .1, s * .13, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#07253b"; ctx.beginPath(); ctx.arc(s * .4, -s * .1, s * .065, 0, Math.PI * 2); ctx.fill();
+    } else if (kind === "octopus") {
+      ctx.fillStyle = "#e87dff";
+      ctx.beginPath(); ctx.arc(0, -s * .12, s * .5, Math.PI, 0); ctx.lineTo(s * .5, s * .25); ctx.quadraticCurveTo(s * .3, s * .43, s * .14, s * .2); ctx.quadraticCurveTo(0, s * .48, -s * .14, s * .2); ctx.quadraticCurveTo(-s * .3, s * .43, -s * .5, s * .25); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(-s * .17, -s * .1, s * .09, 0, Math.PI * 2); ctx.arc(s * .17, -s * .1, s * .09, 0, Math.PI * 2); ctx.fill();
+    } else if (kind === "turtle") {
+      ctx.fillStyle = "#68d36f";
+      ctx.beginPath(); ctx.ellipse(0, 0, s * .62, s * .45, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "#176f58"; ctx.lineWidth = s * .1; ctx.beginPath(); ctx.arc(0, 0, s * .29, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = "#7ee2a0"; ctx.beginPath(); ctx.arc(s * .68, 0, s * .2, 0, Math.PI * 2); ctx.fill();
+      for (const a of [-.65, .65]) { ctx.beginPath(); ctx.ellipse(a * s, -s * .34, s * .22, s * .11, a, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.ellipse(a * s, s * .34, s * .22, s * .11, -a, 0, Math.PI * 2); ctx.fill(); }
+    } else if (kind === "jelly") {
+      ctx.fillStyle = "#8de5ff";
+      ctx.beginPath(); ctx.arc(0, -s * .05, s * .55, Math.PI, 0); ctx.lineTo(s * .55, s * .16); ctx.quadraticCurveTo(0, s * .35, -s * .55, s * .16); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = "#b8efff"; ctx.lineWidth = s * .1;
+      for (let i = -2; i <= 2; i += 1) { ctx.beginPath(); ctx.moveTo(i * s * .2, s * .16); ctx.quadraticCurveTo(i * s * .27 + s * .12, s * .48, i * s * .17, s * .72); ctx.stroke(); }
+    } else if (kind === "crab") {
+      ctx.fillStyle = "#ff6f4c";
+      ctx.beginPath(); ctx.ellipse(0, s * .08, s * .55, s * .38, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "#ff9a59"; ctx.lineWidth = s * .12;
+      ctx.beginPath(); ctx.moveTo(-s * .45, -s * .03); ctx.lineTo(-s * .83, -s * .37); ctx.lineTo(-s * 1.02, -s * .24); ctx.moveTo(s * .45, -s * .03); ctx.lineTo(s * .83, -s * .37); ctx.lineTo(s * 1.02, -s * .24); ctx.stroke();
+      ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(-s * .2, -s * .13, s * .1, 0, Math.PI * 2); ctx.arc(s * .2, -s * .13, s * .1, 0, Math.PI * 2); ctx.fill();
+    } else if (kind === "dolphin") {
+      ctx.fillStyle = "#72c7ef";
+      ctx.beginPath(); ctx.ellipse(0, 0, s * .72, s * .28, -.25, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-s * .55, s * .05); ctx.lineTo(-s * .96, -s * .4); ctx.lineTo(-s * .84, s * .12); ctx.lineTo(-s * .98, s * .5); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-s * .05, -s * .18); ctx.lineTo(s * .18, -s * .65); ctx.lineTo(s * .3, -s * .1); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "#092a43"; ctx.beginPath(); ctx.arc(s * .43, -s * .08, s * .055, 0, Math.PI * 2); ctx.fill();
+    } else if (kind === "shell") {
+      ctx.fillStyle = "#ffb2c9";
+      ctx.beginPath(); ctx.arc(0, s * .12, s * .62, Math.PI, 0); ctx.lineTo(s * .48, s * .5); ctx.lineTo(-s * .48, s * .5); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = "#ffe0ea"; ctx.lineWidth = s * .075;
+      for (let i = -2; i <= 2; i += 1) { ctx.beginPath(); ctx.moveTo(0, -s * .48); ctx.lineTo(i * s * .2, s * .45); ctx.stroke(); }
+    } else {
+      ctx.fillStyle = "#ffe052";
+      ctx.beginPath();
+      for (let i = 0; i < 10; i += 1) { const a = -Math.PI / 2 + i * Math.PI / 5; const r = i % 2 ? s * .37 : s * .78; const px = Math.cos(a) * r; const py = Math.sin(a) * r; if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); }
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // ---------- REEF HOCKEY: LOCAL TWO PLAYER ----------
+  gameFactories.hockey = () => ({
+    title: "REEF HOCKEY",
+    arena: null,
+    p1: null,
+    p2: null,
+    puck: null,
+    pointers: new Map(),
+    score1: 0,
+    score2: 0,
+    started: false,
+    ended: false,
+    goalPause: 0,
+    start() {
+      this.score1 = 0; this.score2 = 0; this.started = false; this.ended = false; this.goalPause = 0; this.pointers = new Map();
+      this.resize(true);
+      setHud("BLUE • ORANGE", "0 : 0", null);
+      setInstruction("Two players: drag one paddle each", false);
+    },
+    resize(reset = false) {
+      const top = Math.max(142, height * .16);
+      const bottom = Math.max(20, height * .025);
+      const side = Math.max(12, width * .035);
+      this.arena = { x: side, y: top, w: width - side * 2, h: height - top - bottom, goalW: Math.min(width * .42, 190) };
+      const r = Math.max(22, Math.min(34, width * .07));
+      if (reset || !this.p1) {
+        this.p1 = { x: width / 2, y: this.arena.y + this.arena.h * .76, r, vx: 0, vy: 0, lastX: width / 2, lastY: this.arena.y + this.arena.h * .76 };
+        this.p2 = { x: width / 2, y: this.arena.y + this.arena.h * .24, r, vx: 0, vy: 0, lastX: width / 2, lastY: this.arena.y + this.arena.h * .24 };
+        this.puck = { x: width / 2, y: this.arena.y + this.arena.h / 2, r: Math.max(13, r * .5), vx: 0, vy: 0 };
+      } else {
+        this.p1.r = r; this.p2.r = r; this.puck.r = Math.max(13, r * .5);
+        this.resetPuck(Math.random() > .5 ? 1 : -1, false);
+      }
+    },
+    pointerDown(id, x, y) {
+      if (this.ended) return;
+      const player = y >= this.arena.y + this.arena.h / 2 ? 1 : 2;
+      if ([...this.pointers.values()].includes(player)) return;
+      this.pointers.set(id, player);
+      if (!this.started) {
+        this.started = true;
+        this.resetPuck(Math.random() > .5 ? 1 : -1, true);
+      }
+      instructionPill.classList.add("fade");
+      this.movePaddle(player, x, y);
+      haptic("tap");
+    },
+    pointerMove(id, x, y) {
+      const player = this.pointers.get(id);
+      if (!player || this.ended) return;
+      this.movePaddle(player, x, y);
+    },
+    pointerUp(id) { this.pointers.delete(id); },
+    movePaddle(player, x, y) {
+      const paddle = player === 1 ? this.p1 : this.p2;
+      const minX = this.arena.x + paddle.r;
+      const maxX = this.arena.x + this.arena.w - paddle.r;
+      const mid = this.arena.y + this.arena.h / 2;
+      const minY = player === 1 ? mid + paddle.r * .45 : this.arena.y + paddle.r;
+      const maxY = player === 1 ? this.arena.y + this.arena.h - paddle.r : mid - paddle.r * .45;
+      paddle.lastX = paddle.x; paddle.lastY = paddle.y;
+      paddle.x = Math.max(minX, Math.min(maxX, x));
+      paddle.y = Math.max(minY, Math.min(maxY, y));
+      paddle.vx = (paddle.x - paddle.lastX) * 25;
+      paddle.vy = (paddle.y - paddle.lastY) * 25;
+    },
+    resetPuck(direction = 1, serve = true) {
+      this.puck.x = this.arena.x + this.arena.w / 2;
+      this.puck.y = this.arena.y + this.arena.h / 2;
+      const angle = (Math.random() - .5) * .62;
+      const speed = Math.max(190, Math.min(330, width * .58));
+      this.puck.vx = serve ? Math.sin(angle) * speed : 0;
+      this.puck.vy = serve ? direction * Math.cos(angle) * speed : 0;
+      this.goalPause = serve ? .55 : 0;
+    },
+    collidePaddle(paddle) {
+      const dx = this.puck.x - paddle.x;
+      const dy = this.puck.y - paddle.y;
+      const min = this.puck.r + paddle.r;
+      const distSq = dx * dx + dy * dy;
+      if (distSq >= min * min) return;
+      const dist = Math.max(.001, Math.sqrt(distSq));
+      const nx = dx / dist, ny = dy / dist;
+      this.puck.x = paddle.x + nx * min;
+      this.puck.y = paddle.y + ny * min;
+      const dot = this.puck.vx * nx + this.puck.vy * ny;
+      const power = Math.max(190, Math.min(560, Math.hypot(paddle.vx, paddle.vy) * .75 + 250));
+      this.puck.vx = this.puck.vx - 2 * Math.min(0, dot) * nx + nx * power + paddle.vx * .25;
+      this.puck.vy = this.puck.vy - 2 * Math.min(0, dot) * ny + ny * power + paddle.vy * .25;
+      const cap = 720;
+      const speed = Math.hypot(this.puck.vx, this.puck.vy);
+      if (speed > cap) { this.puck.vx *= cap / speed; this.puck.vy *= cap / speed; }
+      burst(this.puck.x, this.puck.y, 8, "bubble");
+      tone(260, .045, .024, "square", 70);
+      haptic("soft");
+    },
+    scoreGoal(player) {
+      if (this.goalPause > 0 || this.ended) return;
+      if (player === 1) this.score1 += 1; else this.score2 += 1;
+      setHud("BLUE • ORANGE", `${this.score1} : ${this.score2}`, null);
+      burst(this.puck.x, Math.max(this.arena.y, Math.min(this.arena.y + this.arena.h, this.puck.y)), 30, "spark");
+      tone(720, .14, .05, "triangle", 220);
+      haptic("good");
+      if (this.score1 >= 5 || this.score2 >= 5) {
+        this.ended = true;
+        const winner = this.score1 > this.score2 ? "Blue" : "Orange";
+        window.setTimeout(() => finishGame({
+          score: Math.max(this.score1, this.score2) * 100 + Math.min(this.score1, this.score2) * 10,
+          coins: 8,
+          xp: 25,
+          eyebrow: "LOCAL MATCH COMPLETE",
+          title: `${winner} player wins!`,
+          message: `Final score: Blue ${this.score1} – ${this.score2} Orange. Pass the phone around and run it back.`,
+          scoreLabel: "MATCH SCORE",
+        }), 450);
+        return;
+      }
+      this.resetPuck(player === 1 ? 1 : -1, true);
+    },
+    update(dt) {
+      if (this.ended || !this.started) return;
+      this.p1.vx *= Math.pow(.72, dt * 60); this.p1.vy *= Math.pow(.72, dt * 60);
+      this.p2.vx *= Math.pow(.72, dt * 60); this.p2.vy *= Math.pow(.72, dt * 60);
+      if (this.goalPause > 0) { this.goalPause = Math.max(0, this.goalPause - dt); return; }
+      this.puck.x += this.puck.vx * dt;
+      this.puck.y += this.puck.vy * dt;
+      this.puck.vx *= Math.pow(.998, dt * 60);
+      this.puck.vy *= Math.pow(.998, dt * 60);
+      const left = this.arena.x + this.puck.r;
+      const right = this.arena.x + this.arena.w - this.puck.r;
+      if (this.puck.x < left) { this.puck.x = left; this.puck.vx = Math.abs(this.puck.vx) * .96; tone(180,.03,.012,"square",30); }
+      if (this.puck.x > right) { this.puck.x = right; this.puck.vx = -Math.abs(this.puck.vx) * .96; tone(180,.03,.012,"square",30); }
+      const goalLeft = this.arena.x + (this.arena.w - this.arena.goalW) / 2;
+      const goalRight = goalLeft + this.arena.goalW;
+      const inGoal = this.puck.x > goalLeft && this.puck.x < goalRight;
+      if (this.puck.y < this.arena.y - this.puck.r * .8 && inGoal) this.scoreGoal(1);
+      else if (this.puck.y > this.arena.y + this.arena.h + this.puck.r * .8 && inGoal) this.scoreGoal(2);
+      else {
+        if (this.puck.y < this.arena.y + this.puck.r && !inGoal) { this.puck.y = this.arena.y + this.puck.r; this.puck.vy = Math.abs(this.puck.vy) * .96; }
+        if (this.puck.y > this.arena.y + this.arena.h - this.puck.r && !inGoal) { this.puck.y = this.arena.y + this.arena.h - this.puck.r; this.puck.vy = -Math.abs(this.puck.vy) * .96; }
+      }
+      this.collidePaddle(this.p1);
+      this.collidePaddle(this.p2);
+    },
+    render(dt) {
+      drawOceanBackground(dt, "maze");
+      const a = this.arena;
+      if (!a) return;
+      ctx.save();
+      ctx.fillStyle = "rgba(3,35,60,.58)";
+      ctx.strokeStyle = "rgba(148,239,255,.72)";
+      ctx.lineWidth = 3;
+      roundRect(ctx, a.x, a.y, a.w, a.h, 24); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = "rgba(132,230,247,.35)"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(a.x, a.y + a.h / 2); ctx.lineTo(a.x + a.w, a.y + a.h / 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(a.x + a.w / 2, a.y + a.h / 2, Math.min(58, a.w * .16), 0, Math.PI * 2); ctx.stroke();
+      const goalLeft = a.x + (a.w - a.goalW) / 2;
+      ctx.fillStyle = "rgba(255,255,255,.12)"; ctx.strokeStyle = "rgba(211,251,255,.82)";
+      ctx.fillRect(goalLeft, a.y - 10, a.goalW, 14); ctx.strokeRect(goalLeft, a.y - 10, a.goalW, 14);
+      ctx.fillRect(goalLeft, a.y + a.h - 4, a.goalW, 14); ctx.strokeRect(goalLeft, a.y + a.h - 4, a.goalW, 14);
+      this.drawPaddle(this.p1, "#20d8ff", "#0873c8");
+      this.drawPaddle(this.p2, "#ffbd34", "#e84d35");
+      const pg = ctx.createRadialGradient(this.puck.x - 4, this.puck.y - 5, 2, this.puck.x, this.puck.y, this.puck.r);
+      pg.addColorStop(0, "#d9f7ff"); pg.addColorStop(.35, "#18384b"); pg.addColorStop(1, "#061928");
+      ctx.fillStyle = pg; ctx.shadowColor = "rgba(80,225,255,.5)"; ctx.shadowBlur = 11;
+      ctx.beginPath(); ctx.arc(this.puck.x, this.puck.y, this.puck.r, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    },
+    drawPaddle(p, c1, c2) {
+      const g = ctx.createRadialGradient(p.x - p.r * .25, p.y - p.r * .3, 2, p.x, p.y, p.r);
+      g.addColorStop(0, "white"); g.addColorStop(.15, c1); g.addColorStop(1, c2);
+      ctx.fillStyle = g; ctx.shadowColor = c1; ctx.shadowBlur = 13;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0; ctx.fillStyle = "rgba(0,21,37,.55)";
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r * .43, 0, Math.PI * 2); ctx.fill();
+    },
+  });
+
+  // ---------- CORAL CLASH: LOCAL TWO PLAYER ----------
+  gameFactories.clash = () => ({
+    title: "CORAL CLASH",
+    arena: null,
+    fighters: null,
+    timeLeft: 60,
+    ended: false,
+    start() {
+      this.timeLeft = 60; this.ended = false;
+      this.resize(true);
+      setHud("P1 • P2", "100 : 100", this.timeLeft);
+      setInstruction("Each player has move + STRIKE controls", true);
+    },
+    resize(reset = false) {
+      const top = Math.max(205, height * .25);
+      const bottom = Math.min(height - 130, height * .78);
+      this.arena = { x: 18, y: top, w: width - 36, h: Math.max(185, bottom - top), ground: bottom - 24 };
+      if (reset || !this.fighters) {
+        this.fighters = [
+          { id: 1, x: width * .28, health: 100, direction: 1, moveLeft: false, moveRight: false, attack: 0, cooldown: 0, hitDone: false, knock: 0, color: "blue" },
+          { id: 2, x: width * .72, health: 100, direction: -1, moveLeft: false, moveRight: false, attack: 0, cooldown: 0, hitDone: false, knock: 0, color: "orange" },
+        ];
+      }
+    },
+    control(playerId, action, pressed) {
+      if (this.ended) return;
+      const f = this.fighters[playerId - 1];
+      if (!f) return;
+      if (action === "left") f.moveLeft = pressed;
+      if (action === "right") f.moveRight = pressed;
+      if (action === "attack" && pressed && f.cooldown <= 0) {
+        f.attack = .28; f.cooldown = .48; f.hitDone = false;
+        tone(playerId === 1 ? 330 : 260, .06, .024, "square", 80);
+        haptic("tap");
+      }
+    },
+    update(dt) {
+      if (this.ended) return;
+      this.timeLeft -= dt;
+      const f1 = this.fighters[0], f2 = this.fighters[1];
+      f1.direction = f1.x <= f2.x ? 1 : -1;
+      f2.direction = f2.x <= f1.x ? 1 : -1;
+      const speed = Math.max(115, Math.min(210, width * .42));
+      for (const f of this.fighters) {
+        f.cooldown = Math.max(0, f.cooldown - dt);
+        f.attack = Math.max(0, f.attack - dt);
+        let move = (f.moveRight ? 1 : 0) - (f.moveLeft ? 1 : 0);
+        if (f.attack > .08) move *= .35;
+        f.x += move * speed * dt + f.knock * dt;
+        f.knock *= Math.pow(.86, dt * 60);
+        f.x = Math.max(this.arena.x + 36, Math.min(this.arena.x + this.arena.w - 36, f.x));
+      }
+      const minGap = 58;
+      const dx = f2.x - f1.x;
+      if (Math.abs(dx) < minGap) {
+        const push = (minGap - Math.abs(dx)) / 2;
+        const dir = dx >= 0 ? 1 : -1;
+        f1.x -= push * dir; f2.x += push * dir;
+      }
+      this.tryHit(f1, f2);
+      this.tryHit(f2, f1);
+      setHud("P1 • P2", `${Math.ceil(f1.health)} : ${Math.ceil(f2.health)}`, this.timeLeft);
+      if (f1.health <= 0 || f2.health <= 0) this.finishMatch(f1.health <= 0 ? 2 : 1);
+      else if (this.timeLeft <= 0) this.finishMatch(f1.health === f2.health ? 0 : (f1.health > f2.health ? 1 : 2));
+    },
+    tryHit(attacker, defender) {
+      if (attacker.attack <= .08 || attacker.attack >= .22 || attacker.hitDone) return;
+      attacker.hitDone = true;
+      const distance = Math.abs(attacker.x - defender.x);
+      const facingTarget = Math.sign(defender.x - attacker.x) === attacker.direction;
+      if (distance > 105 || !facingTarget) return;
+      defender.health = Math.max(0, defender.health - 12);
+      defender.knock = attacker.direction * Math.max(170, width * .42);
+      shakeTime = .18; flashTime = .055;
+      burst(defender.x, this.arena.ground - 48, 15, "bad");
+      tone(115, .11, .045, "sawtooth", -35);
+      haptic("bad");
+    },
+    finishMatch(winner) {
+      if (this.ended) return;
+      this.ended = true;
+      for (const f of this.fighters) { f.moveLeft = false; f.moveRight = false; }
+      const f1 = this.fighters[0], f2 = this.fighters[1];
+      const winnerName = winner === 1 ? "Blue fighter" : winner === 2 ? "Orange fighter" : "Draw";
+      const score = winner === 0 ? 300 : 500 + Math.ceil((winner === 1 ? f1.health : f2.health) * 5);
+      window.setTimeout(() => finishGame({
+        score,
+        coins: winner === 0 ? 4 : 8,
+        xp: winner === 0 ? 14 : 26,
+        eyebrow: winner === 0 ? "DRAW MATCH" : "KNOCKOUT",
+        title: winner === 0 ? "The reef stands even!" : `${winnerName} wins!`,
+        message: `Final health: Blue ${Math.ceil(f1.health)} – ${Math.ceil(f2.health)} Orange.`,
+        scoreLabel: "BATTLE SCORE",
+      }), 480);
+    },
+    render(dt) {
+      drawOceanBackground(dt, "maze");
+      if (!this.arena || !this.fighters) return;
+      const a = this.arena;
+      ctx.save();
+      const g = ctx.createLinearGradient(0, a.y, 0, a.y + a.h);
+      g.addColorStop(0, "rgba(4,63,86,.3)"); g.addColorStop(1, "rgba(3,28,43,.82)");
+      ctx.fillStyle = g; ctx.strokeStyle = "rgba(116,229,242,.36)"; ctx.lineWidth = 2;
+      roundRect(ctx, a.x, a.y, a.w, a.h, 26); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "rgba(20,99,79,.88)"; ctx.fillRect(a.x, a.ground, a.w, a.y + a.h - a.ground);
+      for (let i = 0; i < 9; i += 1) {
+        ctx.fillStyle = i % 2 ? "#1f776a" : "#176258";
+        ctx.beginPath(); ctx.arc(a.x + (i + .5) * a.w / 9, a.ground + 4, 14 + (i % 3) * 4, Math.PI, 0); ctx.fill();
+      }
+      this.drawHealthBars();
+      this.drawFighter(this.fighters[0]);
+      this.drawFighter(this.fighters[1]);
+      ctx.restore();
+    },
+    drawHealthBars() {
+      const barW = Math.min(150, width * .34), barH = 12, y = this.arena.y + 16;
+      const drawBar = (x, health, c1, c2, right = false) => {
+        ctx.fillStyle = "rgba(0,15,28,.75)"; roundRect(ctx, x, y, barW, barH, 8); ctx.fill();
+        const fill = barW * health / 100;
+        const gx = right ? x + barW - fill : x;
+        const grad = ctx.createLinearGradient(gx, 0, gx + fill, 0); grad.addColorStop(0, c1); grad.addColorStop(1, c2);
+        ctx.fillStyle = grad; roundRect(ctx, gx, y, Math.max(1, fill), barH, 8); ctx.fill();
+      };
+      drawBar(this.arena.x + 14, this.fighters[0].health, "#12a5dc", "#58efff");
+      drawBar(this.arena.x + this.arena.w - 14 - barW, this.fighters[1].health, "#ff543d", "#ffc13d", true);
+      ctx.fillStyle = "white"; ctx.font = "900 10px system-ui"; ctx.textAlign = "left"; ctx.fillText("P1", this.arena.x + 14, y - 5); ctx.textAlign = "right"; ctx.fillText("P2", this.arena.x + this.arena.w - 14, y - 5);
+    },
+    drawFighter(f) {
+      const y = this.arena.ground - 40;
+      const attacking = f.attack > 0;
+      ctx.save(); ctx.translate(f.x, y); ctx.scale(f.direction, 1);
+      if (f.health <= 0) ctx.rotate(Math.PI / 2 * f.direction);
+      const main = f.color === "blue" ? "#10bce8" : "#f26a39";
+      const light = f.color === "blue" ? "#6ef2ff" : "#ffc34c";
+      ctx.strokeStyle = light; ctx.lineWidth = 8; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(-20, 16); ctx.lineTo(-32, 30); ctx.moveTo(20, 16); ctx.lineTo(32, 30); ctx.stroke();
+      ctx.fillStyle = main; ctx.beginPath(); ctx.ellipse(0, 2, 31, 24, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = light; ctx.beginPath(); ctx.arc(-12, -20, 8, 0, Math.PI * 2); ctx.arc(12, -20, 8, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#06243a"; ctx.beginPath(); ctx.arc(-10, -21, 3, 0, Math.PI * 2); ctx.arc(14, -21, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = light; ctx.lineWidth = 10;
+      ctx.beginPath(); ctx.moveTo(22, -3); ctx.lineTo(attacking ? 62 : 43, attacking ? -6 : -20); ctx.stroke();
+      ctx.fillStyle = light; ctx.beginPath(); ctx.arc(attacking ? 66 : 47, attacking ? -6 : -23, 12, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = main; ctx.beginPath(); ctx.moveTo(attacking ? 64 : 45, attacking ? -18 : -35); ctx.lineTo(attacking ? 78 : 60, attacking ? -5 : -24); ctx.lineTo(attacking ? 63 : 45, attacking ? 6 : -12); ctx.closePath(); ctx.fill();
       ctx.restore();
     },
   });
@@ -1045,20 +1484,34 @@
     context.closePath();
   }
 
+  function canvasPoint(event) {
+    const rect = canvas.getBoundingClientRect();
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+  }
+
   function handlePointerDown(event) {
     if (screenMode !== "game" || !currentGame) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-    pointerStart = { x, y, time: performance.now() };
+    const { x, y } = canvasPoint(event);
+    try { canvas.setPointerCapture(event.pointerId); } catch (_) {}
+    if (typeof currentGame.pointerDown === "function") {
+      currentGame.pointerDown(event.pointerId, x, y, event);
+      return;
+    }
+    pointerStart = { x, y, time: performance.now(), id: event.pointerId };
     if (currentGameId !== "maze") currentGame.tap?.(x, y);
   }
 
+  function handlePointerMove(event) {
+    if (screenMode !== "game" || !currentGame || typeof currentGame.pointerMove !== "function") return;
+    const { x, y } = canvasPoint(event);
+    currentGame.pointerMove(event.pointerId, x, y, event);
+  }
+
   function handlePointerUp(event) {
-    if (screenMode !== "game" || currentGameId !== "maze" || !currentGame || !pointerStart) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+    if (screenMode !== "game" || !currentGame) return;
+    const { x, y } = canvasPoint(event);
+    if (typeof currentGame.pointerUp === "function") currentGame.pointerUp(event.pointerId, x, y, event);
+    if (currentGameId !== "maze" || !pointerStart || pointerStart.id !== event.pointerId) return;
     const dx = x - pointerStart.x;
     const dy = y - pointerStart.y;
     pointerStart = null;
@@ -1068,10 +1521,20 @@
 
   function handleKey(event) {
     if (screenMode !== "game" || !currentGame) return;
-    if (currentGameId === "flappy" && ["Space", "ArrowUp"].includes(event.code)) { event.preventDefault(); currentGame.tap(); }
-    if (currentGameId === "maze") {
+    const isDown = event.type === "keydown";
+    if (isDown && currentGameId === "flappy" && ["Space", "ArrowUp"].includes(event.code)) { event.preventDefault(); currentGame.tap(); }
+    if (isDown && currentGameId === "maze") {
       const directions = { ArrowUp: "up", ArrowRight: "right", ArrowDown: "down", ArrowLeft: "left", KeyW: "up", KeyD: "right", KeyS: "down", KeyA: "left" };
       if (directions[event.code]) { event.preventDefault(); currentGame.move(directions[event.code]); }
+    }
+    if (currentGameId === "clash") {
+      const down = isDown;
+      const controls = {
+        KeyA: [1, "left"], KeyD: [1, "right"], KeyF: [1, "attack"],
+        ArrowLeft: [2, "left"], ArrowRight: [2, "right"], Slash: [2, "attack"], Enter: [2, "attack"],
+      };
+      const mapping = controls[event.code];
+      if (mapping) { event.preventDefault(); currentGame.control(mapping[0], mapping[1], down); }
     }
   }
 
@@ -1115,10 +1578,27 @@
     event.preventDefault();
     currentGame?.move?.(button.dataset.dir);
   }));
+  duelControls.querySelectorAll("[data-player][data-action]").forEach((button) => {
+    const setPressed = (pressed, event) => {
+      event?.preventDefault?.();
+      button.classList.toggle("pressed", pressed);
+      const player = Number(button.dataset.player);
+      currentGame?.control?.(player, button.dataset.action, pressed);
+    };
+    button.addEventListener("pointerdown", (event) => {
+      try { button.setPointerCapture(event.pointerId); } catch (_) {}
+      setPressed(true, event);
+    });
+    button.addEventListener("pointerup", (event) => setPressed(false, event));
+    button.addEventListener("pointercancel", (event) => setPressed(false, event));
+    button.addEventListener("lostpointercapture", (event) => setPressed(false, event));
+  });
   canvas.addEventListener("pointerdown", handlePointerDown);
+  canvas.addEventListener("pointermove", handlePointerMove);
   canvas.addEventListener("pointerup", handlePointerUp);
-  canvas.addEventListener("pointercancel", () => { pointerStart = null; });
+  canvas.addEventListener("pointercancel", (event) => { currentGame?.pointerUp?.(event.pointerId); pointerStart = null; });
   window.addEventListener("keydown", handleKey, { passive: false });
+  window.addEventListener("keyup", handleKey, { passive: false });
   window.addEventListener("resize", resize);
   document.addEventListener("visibilitychange", () => { lastTime = performance.now(); });
 

@@ -7,7 +7,7 @@
   <meta name="description" content="Samuga Arcade — underwater Telegram Mini App games with shared coins, XP and levels." />
   <title>Samuga Arcade</title>
   <link rel="preload" href="/static/assets/samuga-creative-logo.png" as="image" />
-  <link rel="stylesheet" href="/static/styles.css?v=3.0.0" />
+  <link rel="stylesheet" href="/static/styles.css?v=4.0.0" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
@@ -43,7 +43,7 @@
           </div>
           <p class="eyebrow">SAMUGA MINI GAMES</p>
           <h1>SAMUGA <span>ARCADE</span></h1>
-          <p>Four quick games. One shared profile. Earn coins and level up everywhere.</p>
+          <p>Six quick games. One shared profile. Play solo or battle a friend on the same phone.</p>
           <div class="profile-card">
             <div><span>LEVEL</span><strong id="homeLevel">1</strong></div>
             <div class="xp-column"><span id="xpLabel">0 / 20 XP</span><div class="xp-track"><i id="homeXpFill"></i></div></div>
@@ -75,6 +75,20 @@
             <span class="card-copy"><small>MEMORY CHALLENGE</small><strong>Ocean Pairs</strong><em>Find every matching sea creature.</em></span>
             <span class="card-best">BEST <b id="bestMemory">0</b></span>
           </button>
+
+          <button class="game-card multiplayer-card" data-game="hockey" type="button">
+            <span class="local-badge">2 PLAYERS</span>
+            <span class="card-art hockey-art" aria-hidden="true"><i class="hockey-goal g1"></i><i class="hockey-goal g2"></i><i class="hockey-puck"></i><i class="hockey-paddle hp1"></i><i class="hockey-paddle hp2"></i></span>
+            <span class="card-copy"><small>LOCAL MULTIPLAYER</small><strong>Reef Hockey</strong><em>Two fingers, one phone. First player to five goals wins.</em></span>
+            <span class="card-best">BEST <b id="bestHockey">0</b></span>
+          </button>
+
+          <button class="game-card multiplayer-card" data-game="clash" type="button">
+            <span class="local-badge">2 PLAYERS</span>
+            <span class="card-art clash-art" aria-hidden="true"><i class="clash-crab blue">✦</i><i class="clash-burst">VS</i><i class="clash-crab orange">✦</i></span>
+            <span class="card-copy"><small>LOCAL FIGHT</small><strong>Coral Clash</strong><em>Move, strike and knock out the other reef fighter.</em></span>
+            <span class="card-best">BEST <b id="bestClash">0</b></span>
+          </button>
         </section>
 
         <div class="powered-by hub-powered">
@@ -96,6 +110,10 @@
         <button data-dir="left" type="button">◀</button>
         <button data-dir="down" type="button">▼</button>
         <button data-dir="right" type="button">▶</button>
+      </div>
+      <div id="duelControls" class="duel-controls hidden" aria-label="Coral Clash controls">
+        <div class="duel-row player-two"><span>P2</span><button data-player="2" data-action="left" type="button">◀</button><button class="attack" data-player="2" data-action="attack" type="button">STRIKE</button><button data-player="2" data-action="right" type="button">▶</button></div>
+        <div class="duel-row player-one"><span>P1</span><button data-player="1" data-action="left" type="button">◀</button><button class="attack" data-player="1" data-action="attack" type="button">STRIKE</button><button data-player="1" data-action="right" type="button">▶</button></div>
       </div>
     </section>
 
@@ -120,6 +138,6 @@
 
     <div id="rotateNotice" class="rotate-notice hidden"><strong>Turn your phone upright</strong><span>Samuga Arcade plays best in portrait mode.</span></div>
   </main>
-  <script src="/static/app.js?v=3.0.0" defer></script>
+  <script src="/static/app.js?v=4.0.0" defer></script>
 </body>
 </html>
