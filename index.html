@@ -7,7 +7,7 @@
   <meta name="description" content="Samuga Arcade — underwater Telegram Mini App games with shared coins, XP and levels." />
   <title>Samuga Arcade</title>
   <link rel="preload" href="/static/assets/samuga-creative-logo.png" as="image" />
-  <link rel="stylesheet" href="/static/styles.css?v=5.0.0" />
+  <link rel="stylesheet" href="/static/styles.css?v=5.1.0" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
@@ -43,7 +43,7 @@
           </div>
           <p class="eyebrow">SAMUGA MINI GAMES</p>
           <h1>SAMUGA <span>ARCADE</span></h1>
-          <p>Nine quick games. One shared profile. Play solo or battle a friend on the same phone.</p>
+          <p>Ten quick games. One shared profile. Play solo or battle a friend on the same phone.</p>
           <div class="profile-card">
             <div><span>LEVEL</span><strong id="homeLevel">1</strong></div>
             <div class="xp-column"><span id="xpLabel">0 / 20 XP</span><div class="xp-track"><i id="homeXpFill"></i></div></div>
@@ -93,6 +93,13 @@
             <span class="card-art snake-art" aria-hidden="true"><i></i><i></i><i></i><i></i><b>●</b></span>
             <span class="card-copy"><small>CLASSIC ARCADE TWIST</small><strong>Sea Snake</strong><em>Tap left or right to turn and collect glowing pearls.</em></span>
             <span class="card-best">BEST <b id="bestSnake">0</b></span>
+          </button>
+
+          <button class="game-card spooky-card" data-game="ghost" type="button">
+            <span class="local-badge spooky-badge">HORROR</span>
+            <span class="card-art ghost-art" aria-hidden="true"><i class="ghost-glyph">👻</i><i class="ghost-eye e1"></i><i class="ghost-eye e2"></i><i class="ghost-ember">✦</i></span>
+            <span class="card-copy"><small>LANTERN SURVIVAL HORROR</small><strong>Ghost Ship</strong><em>Find the embers, dodge the dark, don't get caught.</em></span>
+            <span class="card-best">BEST <b id="bestGhost">0</b></span>
           </button>
 
           <button class="game-card multiplayer-card" data-game="hockey" type="button">
@@ -157,6 +164,6 @@
 
     <div id="rotateNotice" class="rotate-notice hidden"><strong>Turn your phone upright</strong><span>Samuga Arcade plays best in portrait mode.</span></div>
   </main>
-  <script src="/static/app.js?v=5.0.0" defer></script>
+  <script src="/static/app.js?v=5.1.0" defer></script>
 </body>
 </html>

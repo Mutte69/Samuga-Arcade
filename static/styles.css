@@ -92,3 +92,13 @@ button { color: inherit; font: inherit; border: 0; }
 .fall-coin{position:absolute;color:#ffe56a;font-style:normal;font-size:18px;text-shadow:0 0 12px #ffd53d}.fall-coin.c1{left:22%;top:16px}.fall-coin.c2{right:25%;top:33px}.fall-bomb{position:absolute;right:13%;top:10px;color:#ff647d;font-style:normal;font-size:25px}
 .shark-art{background:linear-gradient(180deg,#087ba0,#07486c)}.shark-art .lane{position:absolute;top:0;bottom:0;width:2px;background:rgba(172,244,255,.25)}.shark-art .l1{left:33%}.shark-art .l2{left:66%}.runner-fish{position:absolute;left:22%;bottom:20px;color:#ffdf57;font-style:normal;font-size:30px;transform:rotate(-90deg)}.chaser-shark{position:absolute;right:20%;top:13px;color:#8ac4df;font-style:normal;font-size:34px;transform:rotate(45deg);text-shadow:0 0 14px rgba(99,214,255,.5)}
 .snake-art{background:linear-gradient(180deg,#075d83,#073d65)}.snake-art i{position:absolute;width:22px;height:22px;border-radius:8px;background:#28e5b3;box-shadow:0 0 10px rgba(40,229,179,.5)}.snake-art i:nth-child(1){left:24%;top:49px}.snake-art i:nth-child(2){left:36%;top:49px}.snake-art i:nth-child(3){left:48%;top:49px}.snake-art i:nth-child(4){left:48%;top:27px}.snake-art b{position:absolute;right:24%;top:25px;color:#ffe06c;font-size:27px;text-shadow:0 0 15px #ffd340}
+
+/* Ghost Ship horror card */
+.spooky-card{background:linear-gradient(180deg,rgba(15,15,20,.94),rgba(3,4,8,.97));border-color:rgba(140,255,180,.16)}
+.spooky-badge{background:linear-gradient(90deg,#3a2b52,#1a0f2b);color:#c9ffde;box-shadow:0 7px 16px rgba(0,0,0,.35)}
+.ghost-art{background:radial-gradient(circle at 50% 35%,rgba(140,255,180,.14),transparent 45%),linear-gradient(180deg,#0a0b10,#050608 70%,#020204)}
+.ghost-art::after{background:linear-gradient(180deg,#120a18,#050308);box-shadow:0 -5px 0 rgba(60,30,70,.3)}
+.ghost-glyph{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);font-style:normal;font-size:38px;filter:drop-shadow(0 0 10px rgba(180,255,210,.35))}
+.ghost-eye{position:absolute;width:6px;height:9px;border-radius:50%;background:#8cff6b;box-shadow:0 0 10px #8cff6b;top:34px}
+.ghost-eye.e1{left:42%}.ghost-eye.e2{right:42%}
+.ghost-ember{position:absolute;right:18%;top:14px;color:#ffce6b;font-style:normal;font-size:20px;text-shadow:0 0 12px #ffb03d}

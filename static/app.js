@@ -58,7 +58,7 @@
     }
   }
 
-  const defaultProfile = () => ({ coins: 0, xp: 0, bests: { flappy: 0, bubble: 0, maze: 0, memory: 0, treasure: 0, shark: 0, snake: 0, hockey: 0, clash: 0 } });
+  const defaultProfile = () => ({ coins: 0, xp: 0, bests: { flappy: 0, bubble: 0, maze: 0, memory: 0, treasure: 0, shark: 0, snake: 0, ghost: 0, hockey: 0, clash: 0 } });
   let profile = loadProfile();
 
   function loadProfile() {
@@ -118,6 +118,7 @@
     $("bestTreasure").textContent = String(profile.bests.treasure || 0);
     $("bestShark").textContent = String(profile.bests.shark || 0);
     $("bestSnake").textContent = String(profile.bests.snake || 0);
+    $("bestGhost").textContent = String(profile.bests.ghost || 0);
     $("bestHockey").textContent = String(profile.bests.hockey || 0);
     $("bestClash").textContent = String(profile.bests.clash || 0);
   }
@@ -1320,6 +1321,544 @@
     },
   });
 
+  // ---------- GHOST SHIP: LANTERN HORROR SURVIVAL ----------
+  gameFactories.ghost = () => ({
+    title: "GHOST SHIP",
+    arena: null,
+    player: null,
+    ghost: null,
+    walls: [],
+    embers: [],
+    exit: null,
+    keys: new Set(),
+    joystickId: null,
+    joystickOrigin: null,
+    joystickVec: { x: 0, y: 0 },
+    facing: -Math.PI / 2,
+    battery: 1,
+    elapsed: 0,
+    collected: 0,
+    totalEmbers: 6,
+    ended: false,
+    graceTimer: 6,
+    huntGrace: 0,
+    huntTimer: 0,
+    forcedHuntGap: 16,
+    timeSinceHunt: 0,
+    huntCheckAcc: 0,
+    falseScareAcc: 0,
+    nextFalseScareAt: 10,
+    flickerUntil: 0,
+    scareUntil: 0,
+    heartAcc: 0,
+    start() {
+      this.keys = new Set();
+      this.joystickId = null;
+      this.joystickVec = { x: 0, y: 0 };
+      this.facing = -Math.PI / 2;
+      this.battery = 1;
+      this.elapsed = 0;
+      this.collected = 0;
+      this.ended = false;
+      this.exit = null;
+      this.graceTimer = 6;
+      this.huntGrace = 0;
+      this.huntTimer = 0;
+      this.forcedHuntGap = 16 + Math.random() * 4;
+      this.timeSinceHunt = 0;
+      this.huntCheckAcc = 0;
+      this.falseScareAcc = 0;
+      this.nextFalseScareAt = 9 + Math.random() * 6;
+      this.flickerUntil = 0;
+      this.scareUntil = 0;
+      this.heartAcc = 0;
+      this.resize();
+      const a = this.arena;
+      this.player = { x: a.x + a.w / 2, y: a.y + a.h * .84, r: 13 };
+      this.ghost = { x: a.x + a.w * .5, y: a.y + a.h * .16, mode: "patrol", target: null, retargetAcc: 0, loseTimer: 0 };
+      this.generate();
+      this.pickPatrolTarget();
+      setHud("EMBERS", `0/${this.totalEmbers}`, null);
+      setInstruction("Drag anywhere to move. Find 6 embers. You are not alone down here.", true);
+    },
+    resize() {
+      const top = Math.max(150, height * .17);
+      const bottom = Math.max(46, height * .05);
+      const side = Math.max(14, width * .04);
+      this.arena = { x: side, y: top, w: width - side * 2, h: height - top - bottom };
+    },
+    computeReachable() {
+      const a = this.arena;
+      const cell = 12;
+      const cols = Math.max(1, Math.ceil(a.w / cell));
+      const rows = Math.max(1, Math.ceil(a.h / cell));
+      const blocked = (gx, gy) => {
+        const px = a.x + gx * cell + cell / 2;
+        const py = a.y + gy * cell + cell / 2;
+        return this.walls.some((wall) => pointInRect(px, py, wall, this.player.r));
+      };
+      const startGX = Math.min(cols - 1, Math.max(0, Math.floor((this.player.x - a.x) / cell)));
+      const startGY = Math.min(rows - 1, Math.max(0, Math.floor((this.player.y - a.y) / cell)));
+      const visited = new Set();
+      const key = (gx, gy) => `${gx},${gy}`;
+      if (!blocked(startGX, startGY)) {
+        const stack = [[startGX, startGY]];
+        visited.add(key(startGX, startGY));
+        while (stack.length) {
+          const [gx, gy] = stack.pop();
+          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const nx = gx + dx, ny = gy + dy;
+            if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
+            const k = key(nx, ny);
+            if (visited.has(k) || blocked(nx, ny)) continue;
+            visited.add(k);
+            stack.push([nx, ny]);
+          }
+        }
+      }
+      return (px, py) => visited.has(key(Math.floor((px - a.x) / cell), Math.floor((py - a.y) / cell)));
+    },
+    generate() {
+      const a = this.arena;
+      const margin = 34;
+      const exitPoint = { x: a.x + a.w * .5, y: a.y + 26 };
+      let isReachable = () => true;
+      for (let layoutAttempt = 0; layoutAttempt < 16; layoutAttempt += 1) {
+        this.walls = [];
+        const wallCount = 5 + Math.floor(Math.random() * 2);
+        let attempts = 0;
+        while (this.walls.length < wallCount && attempts < 80) {
+          attempts += 1;
+          const w = 46 + Math.random() * 58;
+          const h = 46 + Math.random() * 58;
+          const x = a.x + margin + Math.random() * Math.max(1, a.w - margin * 2 - w);
+          const y = a.y + margin + Math.random() * Math.max(1, a.h - margin * 2 - h);
+          const rect = { x, y, w, h };
+          const centerDist = Math.hypot((x + w / 2) - (a.x + a.w / 2), (y + h / 2) - (a.y + a.h * .84));
+          if (centerDist < 95) continue;
+          if (this.walls.some((other) => rectsOverlap(other, rect, 32))) continue;
+          this.walls.push(rect);
+        }
+        isReachable = this.computeReachable();
+        if (isReachable(exitPoint.x, exitPoint.y)) break;
+      }
+      this.embers = [];
+      let emberAttempts = 0;
+      while (this.embers.length < this.totalEmbers && emberAttempts < 400) {
+        emberAttempts += 1;
+        const x = a.x + margin + Math.random() * (a.w - margin * 2);
+        const y = a.y + margin + Math.random() * (a.h - margin * 2);
+        if (this.walls.some((wall) => pointInRect(x, y, wall, 22))) continue;
+        if (Math.hypot(x - this.player.x, y - this.player.y) < 80) continue;
+        if (this.embers.some((e) => Math.hypot(e.x - x, e.y - y) < 70)) continue;
+        if (!isReachable(x, y)) continue;
+        this.embers.push({ x, y, collected: false, phase: Math.random() * Math.PI * 2 });
+      }
+      // Fallback: if the reachable-only pass came up short (rare, tight layouts), fill remaining
+      // embers from any legal spot outside walls so a run is never short an ember to find.
+      emberAttempts = 0;
+      while (this.embers.length < this.totalEmbers && emberAttempts < 400) {
+        emberAttempts += 1;
+        const x = a.x + margin + Math.random() * (a.w - margin * 2);
+        const y = a.y + margin + Math.random() * (a.h - margin * 2);
+        if (this.walls.some((wall) => pointInRect(x, y, wall, 22))) continue;
+        if (this.embers.some((e) => Math.hypot(e.x - x, e.y - y) < 70)) continue;
+        this.embers.push({ x, y, collected: false, phase: Math.random() * Math.PI * 2 });
+      }
+    },
+    pickPatrolTarget() {
+      const a = this.arena;
+      const margin = 40;
+      this.ghost.target = { x: a.x + margin + Math.random() * (a.w - margin * 2), y: a.y + margin + Math.random() * (a.h - margin * 2) };
+    },
+    pointerDown(id, x, y) {
+      if (this.ended || this.joystickId !== null) return;
+      this.joystickId = id;
+      this.joystickOrigin = { x, y };
+      this.joystickVec = { x: 0, y: 0 };
+      instructionPill.classList.add("fade");
+    },
+    pointerMove(id, x, y) {
+      if (id !== this.joystickId || !this.joystickOrigin) return;
+      const dx = x - this.joystickOrigin.x, dy = y - this.joystickOrigin.y;
+      const maxR = 46;
+      const dist = Math.hypot(dx, dy);
+      const clamped = Math.min(1, dist / maxR);
+      const angle = Math.atan2(dy, dx);
+      this.joystickVec = { x: Math.cos(angle) * clamped, y: Math.sin(angle) * clamped };
+    },
+    pointerUp(id) {
+      if (id !== this.joystickId) return;
+      this.joystickId = null;
+      this.joystickVec = { x: 0, y: 0 };
+    },
+    keyControl(code, down) {
+      const map = { ArrowUp: "up", KeyW: "up", ArrowDown: "down", KeyS: "down", ArrowLeft: "left", KeyA: "left", ArrowRight: "right", KeyD: "right" };
+      const dir = map[code];
+      if (!dir) return;
+      if (down) this.keys.add(dir); else this.keys.delete(dir);
+    },
+    collides(x, y) {
+      const r = this.player.r;
+      for (const wall of this.walls) {
+        if (x > wall.x - r && x < wall.x + wall.w + r && y > wall.y - r && y < wall.y + wall.h + r) return true;
+      }
+      return false;
+    },
+    steerGhost(target, speed, dt) {
+      const g = this.ghost;
+      const dx = target.x - g.x, dy = target.y - g.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < .5) return;
+      g.x += (dx / dist) * speed * dt;
+      g.y += (dy / dist) * speed * dt;
+    },
+    checkHuntTrigger() {
+      if (this.graceTimer > 0 || this.huntGrace > 0) return;
+      const dist = Math.hypot(this.ghost.x - this.player.x, this.ghost.y - this.player.y);
+      const proximity = Math.max(0, 1 - dist / 260);
+      const timeFactor = Math.min(.3, this.elapsed * .0055);
+      const chance = .05 + proximity * .45 + timeFactor;
+      if (Math.random() < chance || this.timeSinceHunt > this.forcedHuntGap) this.startHunt();
+    },
+    startHunt() {
+      this.ghost.mode = "hunt";
+      this.huntTimer = 0;
+      this.ghost.retargetAcc = 10;
+      this.ghost.loseTimer = 0;
+      this.timeSinceHunt = 0;
+      tone(85, 1.1, .055, "sawtooth", -35);
+      haptic("soft");
+      setInstruction("It's moving — run!", true);
+    },
+    endHunt() {
+      this.ghost.mode = "patrol";
+      this.huntGrace = 4 + Math.random() * 3;
+      this.forcedHuntGap = 15 + Math.random() * 9;
+      this.pickPatrolTarget();
+    },
+    triggerFlicker() {
+      this.flickerUntil = worldTime + .3;
+      tone(240, .1, .022, "square", -70);
+      this.falseScareAcc = 0;
+      this.nextFalseScareAt = 9 + Math.random() * 7;
+    },
+    triggerCapture() {
+      if (this.ended) return;
+      this.ended = true;
+      this.scareUntil = worldTime + .85;
+      shakeTime = .85;
+      haptic("bad");
+      tone(90, .5, .09, "sawtooth", -40);
+      tone(760, .4, .06, "sawtooth", 260);
+      burst(this.ghost.x, this.ghost.y, 40, "bad");
+      const elapsedSec = this.elapsed;
+      const collected = this.collected;
+      const total = this.totalEmbers;
+      window.setTimeout(() => {
+        const score = Math.max(0, collected * 60 + Math.floor(elapsedSec * 1.4));
+        finishGame({
+          score,
+          coins: Math.max(2, Math.floor(score / 45)),
+          xp: Math.max(6, Math.floor(score / 7)),
+          eyebrow: "THE WRECK CLAIMED YOU",
+          title: "Something caught you in the dark",
+          message: collected >= total ? "You gathered every ember but never reached the surface." : `You recovered ${collected} of ${total} embers before the lantern went out.`,
+          scoreLabel: "SCORE",
+        });
+      }, 700);
+    },
+    spawnExit() {
+      const a = this.arena;
+      this.exit = { x: a.x + a.w * .5, y: a.y + 26 };
+      tone(500, .3, .05, "triangle", 260);
+      setInstruction("All embers found — get back to the hatch!", false);
+    },
+    win() {
+      if (this.ended) return;
+      this.ended = true;
+      burst(this.exit.x, this.exit.y, 40, "spark");
+      tone(880, .3, .05, "triangle", 220);
+      haptic("good");
+      const battBonus = Math.floor(this.battery * 260);
+      const speedBonus = Math.max(0, Math.floor(420 - this.elapsed * 2.6));
+      const score = 480 + battBonus + speedBonus;
+      finishGame({
+        score,
+        coins: Math.max(10, Math.floor(score / 55)),
+        xp: Math.max(24, Math.floor(score / 18)),
+        eyebrow: "ESCAPED THE WRECK",
+        title: "You made it to the surface",
+        message: `You recovered all ${this.totalEmbers} embers in ${Math.floor(this.elapsed)}s with ${Math.round(this.battery * 100)}% lantern power left.`,
+        scoreLabel: "SCORE",
+      });
+    },
+    update(dt) {
+      if (this.ended) return;
+      this.elapsed += dt;
+      let vx = 0, vy = 0;
+      if (this.joystickId !== null) { vx = this.joystickVec.x; vy = this.joystickVec.y; }
+      else {
+        if (this.keys.has("up")) vy -= 1;
+        if (this.keys.has("down")) vy += 1;
+        if (this.keys.has("left")) vx -= 1;
+        if (this.keys.has("right")) vx += 1;
+      }
+      const mag = Math.hypot(vx, vy);
+      if (mag > 1) { vx /= mag; vy /= mag; }
+      if (mag > .06) this.facing = Math.atan2(vy, vx);
+      const speed = 152;
+      const nx = this.player.x + vx * speed * dt;
+      const ny = this.player.y + vy * speed * dt;
+      if (!this.collides(nx, this.player.y)) this.player.x = nx;
+      if (!this.collides(this.player.x, ny)) this.player.y = ny;
+      const a = this.arena;
+      this.player.x = Math.max(a.x + this.player.r, Math.min(a.x + a.w - this.player.r, this.player.x));
+      this.player.y = Math.max(a.y + this.player.r, Math.min(a.y + a.h - this.player.r, this.player.y));
+
+      const drain = .0092 + Math.min(1, mag) * .01;
+      this.battery = Math.max(0, this.battery - drain * dt);
+
+      if (this.graceTimer > 0) this.graceTimer -= dt;
+      if (this.huntGrace > 0) this.huntGrace -= dt;
+      this.timeSinceHunt += dt;
+
+      for (const ember of this.embers) {
+        if (ember.collected) continue;
+        if (Math.hypot(ember.x - this.player.x, ember.y - this.player.y) < 26) {
+          ember.collected = true;
+          this.collected += 1;
+          burst(ember.x, ember.y, 16, "spark");
+          tone(720 + this.collected * 30, .16, .04, "triangle", 160);
+          haptic("tap");
+          setHud("EMBERS", `${this.collected}/${this.totalEmbers}`, null);
+          if (this.collected >= this.totalEmbers && !this.exit) this.spawnExit();
+        }
+      }
+
+      if (this.exit && Math.hypot(this.exit.x - this.player.x, this.exit.y - this.player.y) < 30) {
+        this.win();
+        return;
+      }
+
+      const g = this.ghost;
+      if (g.mode === "patrol") {
+        if (!g.target || Math.hypot(g.target.x - g.x, g.target.y - g.y) < 18) this.pickPatrolTarget();
+        this.steerGhost(g.target, 52, dt);
+        this.huntCheckAcc += dt;
+        if (this.huntCheckAcc >= .5) { this.huntCheckAcc = 0; this.checkHuntTrigger(); }
+      } else if (g.mode === "hunt") {
+        this.huntTimer += dt;
+        g.retargetAcc += dt;
+        if (g.retargetAcc > .4) {
+          g.retargetAcc = 0;
+          const wobble = Math.max(8, 85 - this.huntTimer * 9);
+          g.target = { x: this.player.x + (Math.random() - .5) * wobble, y: this.player.y + (Math.random() - .5) * wobble };
+        }
+        this.steerGhost(g.target, 120, dt);
+        const dist = Math.hypot(g.x - this.player.x, g.y - this.player.y);
+        if (dist > 430) { g.loseTimer += dt; if (g.loseTimer > 2.2) this.endHunt(); } else g.loseTimer = 0;
+        if (this.huntTimer > 12) this.endHunt();
+        if (dist < 26) { this.triggerCapture(); return; }
+      }
+
+      if (g.mode === "patrol" && this.graceTimer <= 0) {
+        this.falseScareAcc += dt;
+        if (this.falseScareAcc > this.nextFalseScareAt) this.triggerFlicker();
+      }
+
+      const distToGhost = Math.hypot(g.x - this.player.x, g.y - this.player.y);
+      const tension = g.mode === "hunt" ? 1 : Math.max(0, 1 - distToGhost / 300) * .55;
+      this.heartAcc += dt;
+      const interval = 1.2 - tension * .9;
+      if (tension > .1 && this.heartAcc > interval) {
+        this.heartAcc = 0;
+        tone(58 + tension * 24, .12, .018 + tension * .022, "sine", -8);
+      }
+
+      setHud("EMBERS", `${this.collected}/${this.totalEmbers}`, null);
+    },
+    currentAmbientR() {
+      let r = 78;
+      if (this.battery <= 0) r = 40 + Math.sin(worldTime * 8) * 10;
+      else r *= .55 + this.battery * .45;
+      if (worldTime < this.flickerUntil) r *= .35 + Math.abs(Math.sin(worldTime * 45)) * .5;
+      if (this.ghost.mode === "hunt") r *= .82;
+      return Math.max(30, r);
+    },
+    currentConeR() {
+      let r = 235;
+      if (this.battery <= 0) r = 70 + Math.sin(worldTime * 8) * 15;
+      else r *= .5 + this.battery * .5;
+      if (worldTime < this.flickerUntil) r *= .3 + Math.abs(Math.sin(worldTime * 45)) * .5;
+      if (this.ghost.mode === "hunt") r *= .85;
+      return Math.max(50, r);
+    },
+    drawGhost() {
+      const g = this.ghost;
+      ctx.save();
+      const bob = Math.sin(worldTime * 3.4) * 4;
+      ctx.translate(g.x, g.y + bob);
+      const tint = g.mode === "hunt" ? "rgba(255,70,70,.85)" : "rgba(190,230,255,.55)";
+      ctx.fillStyle = tint;
+      ctx.beginPath();
+      ctx.moveTo(-16, 12);
+      ctx.quadraticCurveTo(-18, -22, 0, -24);
+      ctx.quadraticCurveTo(18, -22, 16, 12);
+      for (let i = 4; i >= -4; i -= 1) ctx.lineTo(i * 4, 12 + Math.sin(worldTime * 5 + i) * 3);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = g.mode === "hunt" ? "#fff2f2" : "#eafcff";
+      ctx.beginPath(); ctx.ellipse(-5, -8, 2.6, 3.4, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(5, -8, 2.6, 3.4, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    },
+    drawDarkness(ambientR, coneR) {
+      ctx.save();
+      ctx.fillStyle = "rgba(2,2,4,.965)";
+      ctx.fillRect(0, 0, width, height);
+      ctx.globalCompositeOperation = "destination-out";
+      const px = this.player.x, py = this.player.y;
+      const grad = ctx.createRadialGradient(px, py, 0, px, py, ambientR);
+      grad.addColorStop(0, "rgba(255,255,255,1)");
+      grad.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.arc(px, py, ambientR, 0, Math.PI * 2); ctx.fill();
+
+      ctx.save();
+      const spread = .48;
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.arc(px, py, coneR, this.facing - spread, this.facing + spread);
+      ctx.closePath();
+      ctx.clip();
+      const cone = ctx.createRadialGradient(px, py, 0, px, py, coneR);
+      cone.addColorStop(0, "rgba(255,255,255,1)");
+      cone.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = cone;
+      ctx.fillRect(px - coneR, py - coneR, coneR * 2, coneR * 2);
+      ctx.restore();
+
+      ctx.globalCompositeOperation = "source-over";
+      ctx.restore();
+    },
+    drawBattery() {
+      const w = 86, h = 14;
+      const x = width / 2 - w / 2, y = height - 30;
+      ctx.save();
+      ctx.globalAlpha = .9;
+      ctx.strokeStyle = "rgba(255,255,255,.5)";
+      ctx.lineWidth = 2;
+      roundRect(ctx, x, y, w, h, 5); ctx.stroke();
+      ctx.fillStyle = this.battery < .22 ? "#ff5d5d" : "#8cffb0";
+      const fillW = Math.max(2, (w - 4) * this.battery);
+      roundRect(ctx, x + 2, y + 2, fillW, h - 4, 3); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,.75)";
+      ctx.font = "9px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("LANTERN", width / 2, y - 6);
+      ctx.restore();
+    },
+    drawScare() {
+      const flicker = Math.random() > .5 ? 1 : .4;
+      ctx.save();
+      ctx.fillStyle = `rgba(${Math.floor(140 + Math.random() * 80)},0,10,${.55 * flicker})`;
+      ctx.fillRect(0, 0, width, height);
+      ctx.translate(width / 2, height / 2.3);
+      const s = Math.min(width, height) * .5;
+      ctx.fillStyle = "rgba(6,4,10,.92)";
+      ctx.beginPath(); ctx.ellipse(0, 0, s * .6, s * .75, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#8cff6b";
+      ctx.shadowColor = "#8cff6b"; ctx.shadowBlur = 30;
+      ctx.beginPath(); ctx.ellipse(-s * .22, -s * .08, s * .09, s * .14, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(s * .22, -s * .08, s * .09, s * .14, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = "#1a0508";
+      ctx.beginPath();
+      ctx.moveTo(-s * .28, s * .28);
+      for (let i = 0; i <= 8; i += 1) { const t = i / 8; ctx.lineTo(-s * .28 + t * s * .56, s * .28 + Math.sin(t * Math.PI * 6) * s * .05); }
+      ctx.lineTo(s * .28, s * .42); ctx.lineTo(-s * .28, s * .42); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    },
+    render(dt) {
+      const a = this.arena;
+      if (!a) return;
+      if (this.scareUntil && worldTime < this.scareUntil) { this.drawScare(); return; }
+
+      const grad = ctx.createLinearGradient(0, 0, 0, height);
+      grad.addColorStop(0, "#050608");
+      grad.addColorStop(1, "#0a0d10");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.save();
+      ctx.fillStyle = "rgba(4,10,14,.9)";
+      roundRect(ctx, a.x, a.y, a.w, a.h, 10); ctx.fill();
+      ctx.strokeStyle = "rgba(60,80,70,.35)"; ctx.lineWidth = 2;
+      for (let x = a.x; x < a.x + a.w; x += 34) { ctx.beginPath(); ctx.moveTo(x, a.y); ctx.lineTo(x, a.y + a.h); ctx.stroke(); }
+      ctx.restore();
+
+      ctx.save();
+      for (const wall of this.walls) {
+        ctx.fillStyle = "rgba(28,22,18,.92)";
+        roundRect(ctx, wall.x, wall.y, wall.w, wall.h, 6); ctx.fill();
+        ctx.strokeStyle = "rgba(80,60,42,.5)"; ctx.lineWidth = 2; ctx.stroke();
+      }
+      ctx.restore();
+
+      for (const ember of this.embers) {
+        if (ember.collected) continue;
+        const pulse = 1 + Math.sin(worldTime * 3 + ember.phase) * .18;
+        const glow = ctx.createRadialGradient(ember.x, ember.y, 0, ember.x, ember.y, 24 * pulse);
+        glow.addColorStop(0, "rgba(255,214,120,.95)"); glow.addColorStop(1, "rgba(255,140,40,0)");
+        ctx.fillStyle = glow;
+        ctx.beginPath(); ctx.arc(ember.x, ember.y, 24 * pulse, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#fff3d6";
+        ctx.beginPath(); ctx.arc(ember.x, ember.y, 5, 0, Math.PI * 2); ctx.fill();
+      }
+
+      if (this.exit) {
+        const pulse = 1 + Math.sin(worldTime * 4) * .12;
+        const glow = ctx.createRadialGradient(this.exit.x, this.exit.y, 0, this.exit.x, this.exit.y, 40 * pulse);
+        glow.addColorStop(0, "rgba(150,255,220,.85)"); glow.addColorStop(1, "rgba(80,255,200,0)");
+        ctx.fillStyle = glow;
+        ctx.beginPath(); ctx.arc(this.exit.x, this.exit.y, 40 * pulse, 0, Math.PI * 2); ctx.fill();
+      }
+
+      const g = this.ghost;
+      const distToGhost = Math.hypot(g.x - this.player.x, g.y - this.player.y);
+      const angleToGhost = Math.atan2(g.y - this.player.y, g.x - this.player.x);
+      let angleDiff = Math.abs(angleToGhost - this.facing);
+      if (angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
+      const ambientR = this.currentAmbientR();
+      const coneR = this.currentConeR();
+      const visible = distToGhost < ambientR * 1.15 || (distToGhost < coneR && angleDiff < .5);
+      if (visible) this.drawGhost();
+
+      ctx.save();
+      ctx.translate(this.player.x, this.player.y);
+      ctx.rotate(this.facing + Math.PI / 2);
+      ctx.fillStyle = "#dfe9ea";
+      ctx.beginPath(); ctx.ellipse(0, 2, 9, 12, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#ffdf8c"; ctx.shadowColor = "#ffdf8c"; ctx.shadowBlur = 14;
+      ctx.beginPath(); ctx.arc(0, -13, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.restore();
+
+      this.drawDarkness(ambientR, coneR);
+
+      const tension = g.mode === "hunt" ? .32 : Math.max(0, .18 - distToGhost / 2200);
+      if (tension > .02) {
+        const vg = ctx.createRadialGradient(width / 2, height / 2, height * .25, width / 2, height / 2, height * .75);
+        vg.addColorStop(0, "rgba(120,0,10,0)"); vg.addColorStop(1, `rgba(120,0,10,${tension})`);
+        ctx.fillStyle = vg;
+        ctx.fillRect(0, 0, width, height);
+      }
+
+      this.drawBattery();
+    },
+  });
+
   // ---------- CORAL CLASH: LOCAL TWO PLAYER ----------
   gameFactories.clash = () => ({
     title: "CORAL CLASH",
@@ -1476,6 +2015,14 @@
     return result;
   }
 
+  function rectsOverlap(a, b, pad = 0) {
+    return a.x - pad < b.x + b.w && a.x + a.w + pad > b.x && a.y - pad < b.y + b.h && a.y + a.h + pad > b.y;
+  }
+
+  function pointInRect(px, py, rect, pad = 0) {
+    return px > rect.x - pad && px < rect.x + rect.w + pad && py > rect.y - pad && py < rect.y + rect.h + pad;
+  }
+
   function roundRect(context, x, y, w, h, radius) {
     const r = Math.min(radius, Math.abs(w) / 2, Math.abs(h) / 2);
     context.beginPath();
@@ -1529,6 +2076,10 @@
     if (isDown && currentGameId === "maze") {
       const directions = { ArrowUp: "up", ArrowRight: "right", ArrowDown: "down", ArrowLeft: "left", KeyW: "up", KeyD: "right", KeyS: "down", KeyA: "left" };
       if (directions[event.code]) { event.preventDefault(); currentGame.move(directions[event.code]); }
+    }
+    if (currentGameId === "ghost") {
+      const moveKeys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "KeyW", "KeyA", "KeyS", "KeyD"];
+      if (moveKeys.includes(event.code)) { event.preventDefault(); currentGame.keyControl(event.code, isDown); }
     }
     if (currentGameId === "clash") {
       const down = isDown;
